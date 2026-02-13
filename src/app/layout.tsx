@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { AmbientBackdrop } from "@/components/ambient-backdrop";
+import { GlobalNavbar } from "@/components/global-navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="surface-shell antialiased">
+        <AmbientBackdrop />
+        <GlobalNavbar />
+        {children}
+      </body>
     </html>
   );
 }

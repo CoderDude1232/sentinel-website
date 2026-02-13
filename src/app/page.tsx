@@ -1,69 +1,53 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
-  const publicLinks = [
-    { href: "/features", label: "Features" },
-    { href: "/pricing", label: "Pricing" },
-    { href: "/docs", label: "Docs" },
-    { href: "/contact", label: "Contact" },
-  ];
-
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
-      <header className="flex items-center justify-between border-b border-black/10 pb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Sentinel</h1>
-        <nav className="flex items-center gap-4 text-sm">
-          {publicLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:underline">
-              {link.label}
-            </Link>
-          ))}
-          <Link
-            href="/login"
-            className="rounded-md border border-black/20 px-3 py-1.5 text-sm font-medium hover:bg-black/5"
-          >
-            Login
-          </Link>
-        </nav>
-      </header>
+    <main className="mx-auto w-full max-w-7xl px-5 sm:px-8">
+      <section className="hero-shell">
+        <div className="mx-auto w-full max-w-5xl text-center">
+          <p className="hero-subtle stagger-rise">
+            Command infrastructure for ER:LC operations
+          </p>
+          <h1 className="hero-wordmark stagger-rise delay-1 mt-4 flex items-center justify-center gap-3 sm:gap-4">
+            <Image
+              src="/logo.png"
+              alt="Sentinel logo"
+              width={132}
+              height={132}
+              className="brand-logo brand-logo-hero h-20 w-20 sm:h-28 sm:w-28"
+              priority
+            />
+            <span>sentinel</span>
+          </h1>
+          <p className="hero-subtle stagger-rise delay-2 mx-auto mt-6 max-w-3xl">
+            Real-time moderation oversight, staff analytics, and operational
+            control in one platform.
+          </p>
 
-      <section className="grid flex-1 gap-8 py-12 md:grid-cols-2 md:items-center">
-        <div className="space-y-4">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-black/60">
-            ER:LC Operations Platform
-          </p>
-          <h2 className="text-4xl font-semibold leading-tight md:text-5xl">
-            Manage moderation, staff activity, and sessions from one dashboard.
-          </h2>
-          <p className="text-base text-black/70">
-            Sentinel is built for ER:LC communities with real-time monitoring,
-            infractions tracking, and team-based control.
-          </p>
-          <div className="flex gap-3">
-            <Link
-              href="/login"
-              className="rounded-md bg-black px-4 py-2 text-sm font-semibold text-white"
-            >
-              Continue with Discord
+          <div className="stagger-rise delay-3 mt-9 flex flex-wrap items-center justify-center gap-3.5">
+            <Link href="/app" className="button-primary px-6 py-3 text-base">
+              Launch Dashboard
             </Link>
-            <Link
-              href="/app/onboarding"
-              className="rounded-md border border-black/20 px-4 py-2 text-sm font-semibold"
-            >
-              View Onboarding
+            <Link href="/app/onboarding" className="button-secondary px-6 py-3 text-base">
+              Connect ER:LC Server
+            </Link>
+            <Link href="/login" className="button-secondary px-6 py-3 text-base">
+              Sign In with Discord
             </Link>
           </div>
-        </div>
 
-        <div className="space-y-3 rounded-xl border border-black/10 p-6">
-          <h3 className="text-lg font-semibold">v1 Modules</h3>
-          <ul className="space-y-2 text-sm text-black/75">
-            <li>Moderation Panel for ER:LC logs and command actions</li>
-            <li>Activity Panel for staff analytics and performance</li>
-            <li>Infractions Panel for warnings to terminations</li>
-            <li>Sessions for planning, attendance, and outcome metrics</li>
-            <li>Departments with custom permissions and organization</li>
-          </ul>
+          <p className="mt-7 text-base text-[var(--ink-soft)]">
+            By using Sentinel, you agree to our{" "}
+            <Link href="/terms" className="text-[var(--ink-strong)] hover:underline">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-[var(--ink-strong)] hover:underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </div>
       </section>
     </main>
