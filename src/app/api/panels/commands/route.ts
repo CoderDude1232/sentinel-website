@@ -117,6 +117,36 @@ function inferApiError(payload: unknown): string | null {
   );
 }
 
+function asNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function shouldRetryCommandDispatch(status: number, payload: unknown): boolean {
+  if (status !== 500) {
+    return false;
+  }
+  const record = asObject(payload);
+  const code = asNumber(record?.code);
+  if (code === 1001) {
+    return true;
+  }
+  const message = inferApiError(payload)?.toLowerCase() ?? "";
+  return message.includes("did not acknowledge") || message.includes("communicating with roblox");
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 function buildErlcCommandText(input: {
   command: string;
   targetPlayer: string;
@@ -378,7 +408,13 @@ export async function POST(request: NextRequest) {
       isGlobalTarget,
       notes: executionNotes,
     });
-    const commandDispatch = await runErlcCommand(erlcKey.serverKey, commandText);
+    let commandDispatch = await runErlcCommand(erlcKey.serverKey, commandText);
+    let retried = false;
+    if (shouldRetryCommandDispatch(commandDispatch.status, commandDispatch.data)) {
+      retried = true;
+      await wait(5200);
+      commandDispatch = await runErlcCommand(erlcKey.serverKey, commandText);
+    }
 
     if (!commandDispatch.ok) {
       const reason =
@@ -407,6 +443,7 @@ export async function POST(request: NextRequest) {
           global: isGlobalTarget,
           status: commandDispatch.status,
           commandText,
+          retried,
         },
       });
 
@@ -436,6 +473,7 @@ export async function POST(request: NextRequest) {
         global: isGlobalTarget,
         status: commandDispatch.status,
         commandText,
+        retried,
       },
     });
 

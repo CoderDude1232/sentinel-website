@@ -89,6 +89,36 @@ function inferApiError(payload: unknown): string | null {
   );
 }
 
+function asNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function shouldRetryCommandDispatch(status: number, payload: unknown): boolean {
+  if (status !== 500) {
+    return false;
+  }
+  const record = asObject(payload);
+  const code = asNumber(record?.code);
+  if (code === 1001) {
+    return true;
+  }
+  const message = inferApiError(payload)?.toLowerCase() ?? "";
+  return message.includes("did not acknowledge") || message.includes("communicating with roblox");
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export async function GET(request: NextRequest) {
   const user = getSessionUserFromRequest(request);
   if (!user) {
@@ -210,7 +240,13 @@ export async function POST(request: NextRequest) {
 
     if (erlcKey) {
       announcement.attempted = true;
-      const commandResponse = await runErlcCommand(erlcKey.serverKey, announceCommand);
+      let commandResponse = await runErlcCommand(erlcKey.serverKey, announceCommand);
+      let retried = false;
+      if (shouldRetryCommandDispatch(commandResponse.status, commandResponse.data)) {
+        retried = true;
+        await wait(5200);
+        commandResponse = await runErlcCommand(erlcKey.serverKey, announceCommand);
+      }
       announcement.status = commandResponse.status;
       announcement.delivered = commandResponse.ok;
       if (!commandResponse.ok) {
@@ -220,6 +256,9 @@ export async function POST(request: NextRequest) {
           (commandResponse.status === 422
             ? "ER:LC rejected the command (often because the server has no active players)."
             : "ER:LC rejected the announcement command.");
+      }
+      if (retried && !announcement.delivered && !announcement.error) {
+        announcement.error = "ER:LC did not acknowledge command after retry.";
       }
     } else {
       announcement.error = "ER:LC is not connected for this workspace.";
