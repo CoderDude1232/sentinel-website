@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PublicHero } from "@/components/public-hero";
 
 const quickStart = [
   "Sign in with Discord and create your workspace.",
@@ -44,16 +45,11 @@ const docSections = [
 export default function DocsPage() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
-      <section className="glass-card p-6 sm:p-8">
-        <span className="kicker">Documentation</span>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-          Operational guides and integration references.
-        </h1>
-        <p className="mt-4 max-w-3xl text-sm text-[var(--ink-soft)] sm:text-base">
-          Use this documentation hub to onboard your workspace, configure ER:LC
-          integration safely, and standardize how staff use Sentinel modules.
-        </p>
-      </section>
+      <PublicHero
+        kicker="Documentation"
+        title="Operational guides and integration references."
+        description="Use this documentation hub to onboard your workspace, configure ER:LC integration safely, and standardize how staff use Sentinel modules."
+      />
 
       <section className="mt-5 grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
         <article className="glass-card p-5">

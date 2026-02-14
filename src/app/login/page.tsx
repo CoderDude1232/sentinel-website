@@ -1,18 +1,13 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { parseSessionToken, SESSION_COOKIE_NAME } from "@/lib/session";
+import { PublicHero } from "@/components/public-hero";
 
 const securityItems = [
   "OAuth state validation on callback",
   "Signed session cookie handling",
   "Workspace role checks per action",
   "Full authentication audit logs",
-];
-
-const providerRoadmap = [
-  { provider: "Discord", status: "Active" },
-  { provider: "Email", status: "Planned" },
-  { provider: "Google", status: "Planned" },
 ];
 
 type LoginPageProps = {
@@ -33,16 +28,19 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const session = parseSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-5 py-8 sm:px-8 sm:py-10">
-      <section className="grid w-full gap-4 md:grid-cols-[1.05fr_0.95fr]">
+    <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+      <PublicHero
+        kicker="Authentication"
+        title="Access Sentinel through Discord."
+        description="Sign in with Discord to access your workspace and ER:LC integrations."
+      />
+
+      <section className="mt-5 grid w-full gap-4 md:grid-cols-[1.05fr_0.95fr]">
         <article className="glass-card p-6 sm:p-8">
-          <span className="kicker">Authentication</span>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight">
-            Access Sentinel through Discord.
-          </h1>
-          <p className="mt-3 text-sm text-[var(--ink-soft)]">
-            Sign in with Discord to access your workspace. Additional auth
-            providers are planned on the same account-link architecture.
+          <h2 className="text-lg font-semibold tracking-tight">Discord Sign-in</h2>
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">
+            Login is handled directly through Discord OAuth with signed server
+            sessions.
           </p>
           {session ? (
             <div className="mt-6 space-y-3">
@@ -74,19 +72,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </article>
 
         <article className="glass-card p-6">
-          <h2 className="text-lg font-semibold tracking-tight">Access model</h2>
-          <div className="mt-3 space-y-2 text-sm text-[var(--ink-soft)]">
-            {providerRoadmap.map((item) => (
-              <div
-                key={item.provider}
-                className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2"
-              >
-                <span>{item.provider}</span>
-                <span className="text-xs uppercase tracking-[0.1em]">{item.status}</span>
-              </div>
-            ))}
-          </div>
-          <h3 className="mt-5 text-sm font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+          <h2 className="text-lg font-semibold tracking-tight">Session Security</h2>
+          <h3 className="mt-4 text-sm font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
             Security controls
           </h3>
           <ul className="mt-2 space-y-1.5 text-sm text-[var(--ink-soft)]">

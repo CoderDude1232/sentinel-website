@@ -1,3 +1,5 @@
+import { PublicHero } from "@/components/public-hero";
+
 const channels = [
   { name: "Support Desk", detail: "support@sentinel.local", sla: "Response target: <24h" },
   { name: "Billing", detail: "billing@sentinel.local", sla: "Response target: <48h" },
@@ -15,14 +17,11 @@ const inquiryTypes = [
 export default function ContactPage() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
-      <section className="glass-card p-6 sm:p-8">
-        <span className="kicker">Contact</span>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight">Get support from the Sentinel team.</h1>
-        <p className="mt-3 max-w-2xl text-sm text-[var(--ink-soft)]">
-          Route technical, operational, and account questions through the correct
-          support channel for faster response.
-        </p>
-      </section>
+      <PublicHero
+        kicker="Contact"
+        title="Get support from the Sentinel team."
+        description="Route technical, operational, and account questions through the correct support channel for faster response."
+      />
 
       <section className="mt-5 grid gap-4 md:grid-cols-2">
         <article className="glass-card p-5">

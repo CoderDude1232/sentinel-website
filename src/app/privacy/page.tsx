@@ -1,3 +1,5 @@
+import { PublicHero } from "@/components/public-hero";
+
 const privacySections = [
   {
     title: "Information We Collect",
@@ -28,11 +30,11 @@ const privacySections = [
 export default function PrivacyPage() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
-      <section className="glass-card p-6 sm:p-8">
-        <span className="kicker">Legal</span>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight">Privacy Policy</h1>
-        <p className="mt-3 text-sm text-[var(--ink-soft)]">Last updated: February 13, 2026</p>
-      </section>
+      <PublicHero
+        kicker="Legal"
+        title="Privacy Policy"
+        description="Last updated: February 13, 2026"
+      />
 
       <section className="mt-5 space-y-4">
         {privacySections.map((section) => (

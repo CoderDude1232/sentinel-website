@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PublicHero } from "@/components/public-hero";
 
 const plans = [
   {
@@ -39,16 +40,11 @@ const plans = [
 export default function PricingPage() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
-      <section className="glass-card p-6 sm:p-8">
-        <span className="kicker">Pricing</span>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-          Plans sized for solo and team operations.
-        </h1>
-        <p className="mt-4 max-w-2xl text-sm text-[var(--ink-soft)] sm:text-base">
-          Plan structure follows your server model: individual workspace owners
-          run one server, team workspaces can run two.
-        </p>
-      </section>
+      <PublicHero
+        kicker="Pricing"
+        title="Plans sized for solo and team operations."
+        description="Plan structure follows your server model: individual workspace owners run one server, team workspaces can run two."
+      />
 
       <section className="mt-5 grid gap-4 md:grid-cols-3">
         {plans.map((plan) => (

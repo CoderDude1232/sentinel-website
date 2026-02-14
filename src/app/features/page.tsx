@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PublicHero } from "@/components/public-hero";
 
 const featureSections = [
   {
@@ -42,17 +43,11 @@ const featureSections = [
 export default function FeaturesPage() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
-      <section className="glass-card p-6 sm:p-8">
-        <span className="kicker">Product Capabilities</span>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-          Core features built for ER:LC operations.
-        </h1>
-        <p className="mt-4 max-w-3xl text-sm text-[var(--ink-soft)] sm:text-base">
-          Sentinel is structured around six operational modules used by active
-          communities to run moderation, staffing, and session workflows with
-          consistent accountability.
-        </p>
-      </section>
+      <PublicHero
+        kicker="Product Capabilities"
+        title="Core features built for ER:LC operations."
+        description="Sentinel is structured around six operational modules used by active communities to run moderation, staffing, and session workflows with consistent accountability."
+      />
 
       <section className="mt-5 grid gap-4 sm:grid-cols-2">
         {featureSections.map((feature) => (

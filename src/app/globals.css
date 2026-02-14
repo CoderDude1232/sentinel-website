@@ -249,6 +249,31 @@ body {
   z-index: 1;
 }
 
+.public-hero {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(216, 29, 56, 0.16), transparent 38%),
+    linear-gradient(160deg, rgba(20, 20, 26, 0.9), rgba(10, 10, 13, 0.94));
+  box-shadow:
+    0 28px 44px -32px var(--shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.public-hero-title {
+  font-size: clamp(2.1rem, 5vw, 3.35rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+}
+
+.public-hero-description {
+  max-width: 60ch;
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+}
+
 .stagger-rise {
   animation: rise-in 680ms ease both;
 }

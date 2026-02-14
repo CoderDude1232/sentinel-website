@@ -1,3 +1,5 @@
+import { PublicHero } from "@/components/public-hero";
+
 const termsSections = [
   {
     title: "Service Scope",
@@ -28,11 +30,11 @@ const termsSections = [
 export default function TermsPage() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl px-5 py-8 sm:px-8 sm:py-10">
-      <section className="glass-card p-6 sm:p-8">
-        <span className="kicker">Legal</span>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight">Terms of Service</h1>
-        <p className="mt-3 text-sm text-[var(--ink-soft)]">Effective date: February 13, 2026</p>
-      </section>
+      <PublicHero
+        kicker="Legal"
+        title="Terms of Service"
+        description="Effective date: February 13, 2026"
+      />
 
       <section className="mt-5 space-y-4">
         {termsSections.map((section) => (

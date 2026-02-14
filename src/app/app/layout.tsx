@@ -21,7 +21,17 @@ export default function DashboardLayout({
 }>) {
   return (
     <div className="min-h-screen">
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-5 px-5 py-5 sm:px-8 md:grid-cols-[230px_1fr]">
+      <div className="mx-auto w-full max-w-7xl px-5 py-6 sm:px-8">
+        <section className="public-hero mb-5">
+          <span className="kicker">Workspace</span>
+          <h1 className="public-hero-title mt-4">Sentinel Command Console</h1>
+          <p className="public-hero-description mt-3">
+            Monitor ER:LC moderation, staff activity, and operational workflows from one secured dashboard.
+          </p>
+        </section>
+      </div>
+
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-5 px-5 pb-6 sm:px-8 md:grid-cols-[230px_1fr]">
         <aside className="glass-card h-fit p-4 md:sticky md:top-4">
           <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.04)] px-3 py-2">
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">
