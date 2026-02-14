@@ -50,6 +50,44 @@ export default function Home() {
           </p>
         </div>
       </section>
+
+      <section className="mx-auto mb-16 mt-2 grid w-full max-w-6xl gap-6 md:grid-cols-2">
+        <article className="cinematic-card">
+          <Image
+            src="/cinematic1.png"
+            alt="Sentinel cinematic scene one"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            priority={false}
+          />
+          <div className="cinematic-overlay" />
+          <div className="cinematic-caption">
+            <p className="text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">
+              Moderation View
+            </p>
+            <p className="mt-1 text-base font-semibold">Live oversight in active situations</p>
+          </div>
+        </article>
+
+        <article className="cinematic-card">
+          <Image
+            src="/cinematic2.png"
+            alt="Sentinel cinematic scene two"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            priority={false}
+          />
+          <div className="cinematic-overlay" />
+          <div className="cinematic-caption">
+            <p className="text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">
+              Activity Command
+            </p>
+            <p className="mt-1 text-base font-semibold">Track staff performance and outcomes</p>
+          </div>
+        </article>
+      </section>
     </main>
   );
 }
