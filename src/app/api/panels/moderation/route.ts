@@ -7,6 +7,7 @@ import {
   updateModerationCase,
 } from "@/lib/workspace-store";
 import { verifyRobloxUsername } from "@/lib/roblox-api";
+import { createAuditEvent } from "@/lib/ops-store";
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -67,6 +68,16 @@ export async function POST(request: NextRequest) {
       owner: body.owner?.trim() || user.displayName,
       status: body.status?.trim() || "Queued",
     });
+
+    await createAuditEvent({
+      userId: user.id,
+      module: "moderation",
+      action: "case.created",
+      actor: body.owner?.trim() || user.displayName,
+      subject: verifiedPlayer.name,
+      afterState: record,
+    });
+
     return NextResponse.json({ case: record }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create moderation case";
@@ -103,6 +114,20 @@ export async function PATCH(request: NextRequest) {
     if (!record) {
       return NextResponse.json({ error: "Case not found" }, { status: 404 });
     }
+
+    await createAuditEvent({
+      userId: user.id,
+      module: "moderation",
+      action: "case.updated",
+      actor: body.owner?.trim() || user.displayName,
+      subject: record.player,
+      afterState: {
+        id: record.id,
+        caseRef: record.caseRef,
+        status: record.status,
+        owner: record.owner,
+      },
+    });
 
     return NextResponse.json({ case: record });
   } catch (error) {

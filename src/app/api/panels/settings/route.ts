@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
 import { getUserErlcKey } from "@/lib/erlc-store";
+import { createAuditEvent } from "@/lib/ops-store";
 import {
   ensureWorkspaceSeed,
   getOnboardingPreferences,
@@ -178,6 +179,23 @@ export async function PUT(request: NextRequest) {
       modulePreferences: savedPreferences,
       onboardingComplete,
     });
+
+    await createAuditEvent({
+      userId: user.id,
+      module: "settings",
+      action: "workspace.updated",
+      actor: user.displayName,
+      afterState: {
+        retentionDays: savedSettings.retentionDays,
+        timezone: savedSettings.timezone,
+        sessionVisibility: savedSettings.sessionVisibility,
+        webhookConfigured: Boolean(savedSettings.webhookUrl),
+      },
+      metadata: {
+        enabledModules: Object.values(savedPreferences).filter(Boolean).length,
+      },
+    });
+
     response.cookies.set(ONBOARDING_COOKIE_NAME, onboardingComplete ? "1" : "0", {
       httpOnly: false,
       sameSite: "lax",

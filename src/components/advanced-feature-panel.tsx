@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -511,3 +511,4 @@ export function AdvancedFeaturePanel({
     </div>
   );
 }
+

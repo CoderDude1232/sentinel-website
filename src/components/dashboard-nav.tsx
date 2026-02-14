@@ -58,7 +58,7 @@ const navSections: Array<{
       { href: "/app/workflows", label: "Workflows", moduleKey: "enableWorkflows" },
       { href: "/app/appeals", label: "Appeals", moduleKey: "enableAppeals" },
       { href: "/app/profiles", label: "Profiles", moduleKey: "enableProfiles" },
-      { href: "/app/logs", label: "Logs", moduleKey: "enableLogs" },
+      { href: "/app/logs", label: "Audit Logs", moduleKey: "enableLogs" },
     ],
   },
   {

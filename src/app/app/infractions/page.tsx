@@ -1,8 +1,17 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { UiSelect } from "@/components/ui-select";
 import { CollapsibleSection } from "@/components/collapsible-section";
+
+type InfractionPolicy = {
+  warningPoints: number;
+  strikePoints: number;
+  suspensionPoints: number;
+  terminationPoints: number;
+  autoSuspendThreshold: number;
+  autoTerminationThreshold: number;
+};
 
 type InfractionData = {
   stats: Array<{ type: string; count: number }>;
@@ -15,6 +24,8 @@ type InfractionData = {
     appealStatus: string;
     createdAt: string;
   }>;
+  policy: InfractionPolicy;
+  totals: { cases: number; points: number };
   error?: string;
 };
 
@@ -28,8 +39,22 @@ const targetSourceOptions: Array<{ value: "online" | "offline"; label: string }>
   { value: "offline", label: "Offline player" },
 ];
 
+const defaultPolicy: InfractionPolicy = {
+  warningPoints: 1,
+  strikePoints: 3,
+  suspensionPoints: 5,
+  terminationPoints: 8,
+  autoSuspendThreshold: 8,
+  autoTerminationThreshold: 12,
+};
+
 export default function InfractionsPage() {
-  const [data, setData] = useState<InfractionData>({ stats: [], cases: [] });
+  const [data, setData] = useState<InfractionData>({
+    stats: [],
+    cases: [],
+    policy: defaultPolicy,
+    totals: { cases: 0, points: 0 },
+  });
   const [targetSource, setTargetSource] = useState<"online" | "offline">("online");
   const [onlinePlayers, setOnlinePlayers] = useState<Array<{ id: number; username: string; displayName: string }>>([]);
   const [selectedOnlineTarget, setSelectedOnlineTarget] = useState("");
@@ -38,6 +63,7 @@ export default function InfractionsPage() {
   const [level, setLevel] = useState("Warning");
   const [issuer, setIssuer] = useState("");
   const [loading, setLoading] = useState(false);
+  const [savingPolicy, setSavingPolicy] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
@@ -92,7 +118,12 @@ export default function InfractionsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ target: resolvedTarget, targetSource, level, issuer }),
       });
-      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        pointsAwarded?: number;
+        totalPoints?: number;
+        thresholdAction?: string;
+      };
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to create infraction");
       }
@@ -100,11 +131,46 @@ export default function InfractionsPage() {
         setOfflineTarget("");
       }
       await load();
-      setMessage("Infraction logged.");
+      if (payload.thresholdAction && payload.thresholdAction !== "none") {
+        setMessage(`Infraction logged. Threshold triggered: ${payload.thresholdAction}.`);
+      } else {
+        setMessage(
+          `Infraction logged. +${payload.pointsAwarded ?? 0} points (total ${payload.totalPoints ?? data.totals.points}).`,
+        );
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to create infraction");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function savePolicy(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSavingPolicy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/panels/infractions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data.policy),
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        policy?: InfractionPolicy;
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to save infraction policy");
+      }
+      if (payload.policy) {
+        setData((prev) => ({ ...prev, policy: payload.policy as InfractionPolicy }));
+      }
+      setMessage("Infraction policy saved.");
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to save infraction policy");
+    } finally {
+      setSavingPolicy(false);
     }
   }
 
@@ -116,9 +182,115 @@ export default function InfractionsPage() {
 
       <section className="mt-5 space-y-3">
         <CollapsibleSection
+          title="Points and thresholds"
+          subtitle="Automated suspension/termination threshold controls."
+          meta={`${data.totals.points} pts`}
+        >
+          <form onSubmit={savePolicy} className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="text-xs text-[var(--ink-soft)]">
+                Warning points
+                <input
+                  type="number"
+                  min={0}
+                  value={data.policy.warningPoints}
+                  onChange={(event) =>
+                    setData((prev) => ({
+                      ...prev,
+                      policy: { ...prev.policy, warningPoints: Number(event.target.value) || 0 },
+                    }))
+                  }
+                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs text-[var(--ink-soft)]">
+                Strike points
+                <input
+                  type="number"
+                  min={0}
+                  value={data.policy.strikePoints}
+                  onChange={(event) =>
+                    setData((prev) => ({
+                      ...prev,
+                      policy: { ...prev.policy, strikePoints: Number(event.target.value) || 0 },
+                    }))
+                  }
+                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs text-[var(--ink-soft)]">
+                Suspension points
+                <input
+                  type="number"
+                  min={0}
+                  value={data.policy.suspensionPoints}
+                  onChange={(event) =>
+                    setData((prev) => ({
+                      ...prev,
+                      policy: { ...prev.policy, suspensionPoints: Number(event.target.value) || 0 },
+                    }))
+                  }
+                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="text-xs text-[var(--ink-soft)]">
+                Termination points
+                <input
+                  type="number"
+                  min={0}
+                  value={data.policy.terminationPoints}
+                  onChange={(event) =>
+                    setData((prev) => ({
+                      ...prev,
+                      policy: { ...prev.policy, terminationPoints: Number(event.target.value) || 0 },
+                    }))
+                  }
+                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs text-[var(--ink-soft)]">
+                Auto suspend threshold
+                <input
+                  type="number"
+                  min={1}
+                  value={data.policy.autoSuspendThreshold}
+                  onChange={(event) =>
+                    setData((prev) => ({
+                      ...prev,
+                      policy: { ...prev.policy, autoSuspendThreshold: Number(event.target.value) || 1 },
+                    }))
+                  }
+                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="text-xs text-[var(--ink-soft)]">
+                Auto termination threshold
+                <input
+                  type="number"
+                  min={1}
+                  value={data.policy.autoTerminationThreshold}
+                  onChange={(event) =>
+                    setData((prev) => ({
+                      ...prev,
+                      policy: { ...prev.policy, autoTerminationThreshold: Number(event.target.value) || 1 },
+                    }))
+                  }
+                  className="mt-1 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+            <button className="button-primary px-4 py-2 text-sm" type="submit" disabled={savingPolicy}>
+              {savingPolicy ? "Saving..." : "Save policy"}
+            </button>
+          </form>
+        </CollapsibleSection>
+
+        <CollapsibleSection
           title="Infraction stats"
           subtitle="Current counts by disciplinary level."
-          meta={String(data.stats.length)}
+          meta={`${data.totals.cases} cases`}
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {data.stats.map((item) => (
@@ -229,3 +401,4 @@ export default function InfractionsPage() {
     </div>
   );
 }
+
