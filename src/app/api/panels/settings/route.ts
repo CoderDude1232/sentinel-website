@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
+import { getUserErlcKey } from "@/lib/erlc-store";
 import {
   ensureWorkspaceSeed,
   getOnboardingPreferences,
+  getOnboardingSummary,
   getWorkspaceSettings,
   upsertOnboardingPreferences,
   upsertWorkspaceSettings,
 } from "@/lib/workspace-store";
+
+const ONBOARDING_COOKIE_NAME = "sentinel_onboarding_complete";
+const REQUIRED_ONBOARDING_STEPS = new Set([
+  "Create workspace",
+  "Choose enabled modules",
+  "Configure core settings",
+  "Connect ER:LC server",
+  "Launch readiness",
+]);
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,11 +31,27 @@ export async function GET(request: NextRequest) {
 
   try {
     await ensureWorkspaceSeed(user);
-    const [settings, modulePreferences] = await Promise.all([
+    const [settings, modulePreferences, erlcKey] = await Promise.all([
       getWorkspaceSettings(user.id),
       getOnboardingPreferences(user.id),
+      getUserErlcKey(user.id),
     ]);
-    return NextResponse.json({ ...settings, modulePreferences });
+    const enabledModulesCount = Object.values(modulePreferences).filter(Boolean).length;
+    const steps = await getOnboardingSummary(user.id, {
+      enabledModulesCount,
+      erlcConnected: Boolean(erlcKey),
+    });
+    const onboardingComplete = steps
+      .filter((step) => REQUIRED_ONBOARDING_STEPS.has(step.step))
+      .every((step) => step.status === "Complete");
+    const response = NextResponse.json({ ...settings, modulePreferences, onboardingComplete });
+    response.cookies.set(ONBOARDING_COOKIE_NAME, onboardingComplete ? "1" : "0", {
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load workspace settings";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -132,8 +159,32 @@ export async function PUT(request: NextRequest) {
       enableBilling: body.modulePreferences?.enableBilling ?? existingPreferences.enableBilling,
     });
 
-    const [savedSettings, savedPreferences] = await Promise.all([settingsUpdate, preferencesUpdate]);
-    return NextResponse.json({ ...savedSettings, modulePreferences: savedPreferences });
+    const [savedSettings, savedPreferences, erlcKey] = await Promise.all([
+      settingsUpdate,
+      preferencesUpdate,
+      getUserErlcKey(user.id),
+    ]);
+    const enabledModulesCount = Object.values(savedPreferences).filter(Boolean).length;
+    const steps = await getOnboardingSummary(user.id, {
+      enabledModulesCount,
+      erlcConnected: Boolean(erlcKey),
+    });
+    const onboardingComplete = steps
+      .filter((step) => REQUIRED_ONBOARDING_STEPS.has(step.step))
+      .every((step) => step.status === "Complete");
+
+    const response = NextResponse.json({
+      ...savedSettings,
+      modulePreferences: savedPreferences,
+      onboardingComplete,
+    });
+    response.cookies.set(ONBOARDING_COOKIE_NAME, onboardingComplete ? "1" : "0", {
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to save workspace settings";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -1836,15 +1836,13 @@ export async function getOnboardingSummary(
 
   const result = await pool.query<{
     departments_count: string;
-    sessions_count: string;
-    moderation_count: string;
+    retention_days: string;
     webhook_configured: string;
   }>(
     `
       SELECT
         (SELECT COUNT(*)::TEXT FROM departments WHERE discord_user_id = $1) AS departments_count,
-        (SELECT COUNT(*)::TEXT FROM sessions WHERE discord_user_id = $1) AS sessions_count,
-        (SELECT COUNT(*)::TEXT FROM moderation_cases WHERE discord_user_id = $1) AS moderation_count,
+        (SELECT retention_days::TEXT FROM workspace_settings WHERE discord_user_id = $1) AS retention_days,
         (SELECT CASE WHEN webhook_url IS NULL OR webhook_url = '' THEN '0' ELSE '1' END
           FROM workspace_settings WHERE discord_user_id = $1) AS webhook_configured
     `,
@@ -1853,11 +1851,12 @@ export async function getOnboardingSummary(
 
   const row = result.rows[0];
   const departments = Number(row?.departments_count ?? "0");
-  const sessions = Number(row?.sessions_count ?? "0");
-  const moderation = Number(row?.moderation_count ?? "0");
+  const retentionDays = Number(row?.retention_days ?? "0");
   const webhook = Number(row?.webhook_configured ?? "0");
-  const erlcConnected = options?.erlcConnected ?? moderation > 0;
+  const erlcConnected = options?.erlcConnected ?? false;
   const enabledModulesCount = options?.enabledModulesCount ?? 0;
+  const coreSettingsReady = retentionDays === 30 || retentionDays === 90;
+  const readinessComplete = enabledModulesCount > 0 && erlcConnected && coreSettingsReady;
 
   return [
     {
@@ -1874,6 +1873,13 @@ export async function getOnboardingSummary(
           : "Select which modules to enable in your workspace.",
     },
     {
+      step: "Configure core settings",
+      status: coreSettingsReady ? "Complete" : "In progress",
+      detail: coreSettingsReady
+        ? `Retention policy set (${retentionDays} days).`
+        : "Set retention and core workspace defaults.",
+    },
+    {
       step: "Connect ER:LC server",
       status: erlcConnected ? "Complete" : "In progress",
       detail: erlcConnected ? "ER:LC key connected and validated." : "Add your ER:LC Server-Key to activate live server data.",
@@ -1884,14 +1890,16 @@ export async function getOnboardingSummary(
       detail: departments > 0 ? `${departments} department(s) configured.` : "Department structure not configured.",
     },
     {
-      step: "Schedule sessions",
-      status: sessions > 0 ? "In progress" : "Pending",
-      detail: sessions > 0 ? `${sessions} session(s) found in schedule.` : "No sessions have been scheduled yet.",
+      step: "Configure alerts",
+      status: webhook > 0 ? "Complete" : "In progress",
+      detail: webhook > 0 ? "Discord webhook is configured." : "Webhook URL can be added now or later.",
     },
     {
-      step: "Configure alerts",
-      status: webhook > 0 ? "Complete" : "Pending",
-      detail: webhook > 0 ? "Discord webhook is configured." : "Webhook URL is not configured yet.",
+      step: "Launch readiness",
+      status: readinessComplete ? "Complete" : "In progress",
+      detail: readinessComplete
+        ? "Workspace is ready. Onboarding will be hidden."
+        : "Complete module selection and ER:LC connection to finish onboarding.",
     },
   ];
 }

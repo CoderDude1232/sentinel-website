@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 type OnboardingResponse = {
@@ -19,6 +18,7 @@ type OnboardingResponse = {
     infractionEvidenceRequired: boolean;
   };
   erlcConnected: boolean;
+  onboardingComplete?: boolean;
   error?: string;
 };
 
@@ -36,7 +36,10 @@ export default function OnboardingPage() {
   const [infractionEvidenceRequired, setInfractionEvidenceRequired] = useState(true);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [erlcConnected, setErlcConnected] = useState(false);
+  const [serverKeyInput, setServerKeyInput] = useState("");
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [connectingKey, setConnectingKey] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
@@ -55,6 +58,7 @@ export default function OnboardingPage() {
       setInfractionEvidenceRequired(Boolean(payload.settings.infractionEvidenceRequired));
     }
     setErlcConnected(Boolean(payload.erlcConnected));
+    setOnboardingComplete(Boolean(payload.onboardingComplete));
   }, []);
 
   useEffect(() => {
@@ -94,6 +98,34 @@ export default function OnboardingPage() {
     }
   }
 
+  async function connectServerKey() {
+    if (!serverKeyInput.trim()) {
+      setMessage("Enter your ER:LC Server-Key first.");
+      return;
+    }
+
+    setConnectingKey(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/integrations/erlc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serverKey: serverKeyInput }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to connect ER:LC key");
+      }
+      setServerKeyInput("");
+      await load();
+      setMessage("ER:LC key connected.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to connect ER:LC key");
+    } finally {
+      setConnectingKey(false);
+    }
+  }
+
   function togglePreference(key: keyof OnboardingResponse["preferences"]) {
     setPreferences((prev) => ({ ...prev, [key]: !prev[key] }));
   }
@@ -117,6 +149,11 @@ export default function OnboardingPage() {
           </button>
         </div>
       </div>
+      {onboardingComplete ? (
+        <p className="mt-2 rounded-lg border border-[rgba(82,196,122,0.45)] bg-[rgba(82,196,122,0.12)] px-3 py-2 text-sm text-[var(--ink-strong)]">
+          Onboarding is complete. You now have full workspace access.
+        </p>
+      ) : null}
       {message ? <p className="mt-2 text-sm text-[var(--ink-soft)]">{message}</p> : null}
 
       <section className="mt-5 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
@@ -133,6 +170,7 @@ export default function OnboardingPage() {
             <label key={key} className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm">
               <input
                 type="checkbox"
+                className="ui-checkbox"
                 checked={preferences[key as keyof OnboardingResponse["preferences"]]}
                 onChange={() => togglePreference(key as keyof OnboardingResponse["preferences"])}
               />
@@ -150,7 +188,7 @@ export default function OnboardingPage() {
             <select
               value={retentionDays}
               onChange={(event) => setRetentionDays(Number(event.target.value) === 30 ? 30 : 90)}
-              className="mt-1 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+              className="ui-select mt-1 w-full rounded-md px-3 py-2 text-sm"
             >
               <option value={30}>30 days</option>
               <option value={90}>90 days</option>
@@ -162,13 +200,14 @@ export default function OnboardingPage() {
               value={webhookUrl}
               onChange={(event) => setWebhookUrl(event.target.value)}
               className="mt-1 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
-              placeholder="https://discord.com/api/webhooks/..."
             />
+            <span className="mt-1 block text-xs text-[var(--ink-soft)]">Optional; used for external alert delivery.</span>
           </label>
         </div>
         <label className="mt-3 flex items-center gap-2 text-sm text-[var(--ink-soft)]">
           <input
             type="checkbox"
+            className="ui-checkbox"
             checked={infractionEvidenceRequired}
             onChange={(event) => setInfractionEvidenceRequired(event.target.checked)}
           />
@@ -182,11 +221,24 @@ export default function OnboardingPage() {
           Status: <span className="text-[var(--ink-strong)]">{erlcConnected ? "Connected" : "Not connected"}</span>
         </p>
         <p className="mt-2 text-sm text-[var(--ink-soft)]">
-          Use your ER:LC <span className="text-[var(--ink-strong)]">Server-Key</span> in the integrations panel. Global API keys are not accepted in this field.
+          Paste your ER:LC <span className="text-[var(--ink-strong)]">Server-Key</span> below. Global API keys are not accepted here.
         </p>
-        <Link href="/app/integrations" className="button-secondary mt-3 px-4 py-2 text-sm">
-          Open Integrations
-        </Link>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <input
+            type="password"
+            value={serverKeyInput}
+            onChange={(event) => setServerKeyInput(event.target.value)}
+            className="w-full min-w-[240px] flex-1 rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm sm:max-w-[420px]"
+          />
+          <button
+            className="button-secondary px-4 py-2 text-sm"
+            type="button"
+            onClick={() => void connectServerKey()}
+            disabled={connectingKey || !serverKeyInput.trim()}
+          >
+            {connectingKey ? "Connecting..." : "Connect Key"}
+          </button>
+        </div>
       </section>
 
       <div className="mt-5 space-y-3">

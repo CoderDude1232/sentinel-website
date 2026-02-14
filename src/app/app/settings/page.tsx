@@ -155,7 +155,7 @@ export default function SettingsPage() {
                 onChange={(event) =>
                   setSettings((prev) => ({ ...prev, retentionDays: Number(event.target.value) === 30 ? 30 : 90 }))
                 }
-                className="mt-1 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+                className="ui-select mt-1 w-full rounded-md px-3 py-2 text-sm"
               >
                 <option value={30}>30 days</option>
                 <option value={90}>90 days</option>
@@ -167,7 +167,6 @@ export default function SettingsPage() {
                 value={settings.webhookUrl ?? ""}
                 onChange={(event) => setSettings((prev) => ({ ...prev, webhookUrl: event.target.value }))}
                 className="mt-1 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
-                placeholder="https://discord.com/api/webhooks/..."
               />
             </label>
           </div>
@@ -175,6 +174,7 @@ export default function SettingsPage() {
           <label className="mt-3 flex items-center gap-2 text-sm text-[var(--ink-soft)]">
             <input
               type="checkbox"
+              className="ui-checkbox"
               checked={settings.infractionEvidenceRequired}
               onChange={(event) =>
                 setSettings((prev) => ({ ...prev, infractionEvidenceRequired: event.target.checked }))
@@ -214,6 +214,7 @@ export default function SettingsPage() {
               <label key={key} className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm">
                 <input
                   type="checkbox"
+                  className="ui-checkbox"
                   checked={settings.modulePreferences[key as keyof SettingsState["modulePreferences"]]}
                   onChange={() => toggleModulePreference(key as keyof SettingsState["modulePreferences"])}
                 />

@@ -98,16 +98,21 @@ export function DashboardNav() {
     enableObservability: true,
     enableBilling: false,
   });
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
 
   useEffect(() => {
     let active = true;
     (async () => {
-      const response = await fetch("/api/panels/settings", { cache: "no-store" });
+      const response = await fetch("/api/panels/onboarding", { cache: "no-store" });
       const payload = (await response.json().catch(() => ({}))) as {
-        modulePreferences?: ModulePreferences;
+        preferences?: ModulePreferences;
+        onboardingComplete?: boolean;
       };
-      if (active && payload.modulePreferences) {
-        setPreferences(payload.modulePreferences);
+      if (active) {
+        if (payload.preferences) {
+          setPreferences(payload.preferences);
+        }
+        setOnboardingComplete(Boolean(payload.onboardingComplete));
       }
     })();
     return () => {
@@ -116,16 +121,28 @@ export function DashboardNav() {
   }, []);
 
   const visibleSections = useMemo(
-    () =>
+    () => {
+      if (!onboardingComplete) {
+        return [
+          {
+            title: "Setup",
+            links: [{ href: "/app/onboarding", label: "Onboarding", moduleKey: null }],
+          },
+        ];
+      }
+
+      return (
       navSections
         .map((section) => ({
           ...section,
-          links: section.links.filter((link) =>
-            link.moduleKey ? preferences[link.moduleKey] : true,
-          ),
+          links: section.links
+            .filter((link) => link.href !== "/app/onboarding")
+            .filter((link) => (link.moduleKey ? preferences[link.moduleKey] : true)),
         }))
-        .filter((section) => section.links.length > 0),
-    [preferences],
+        .filter((section) => section.links.length > 0)
+      );
+    },
+    [preferences, onboardingComplete],
   );
 
   return (
