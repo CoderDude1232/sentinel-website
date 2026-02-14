@@ -1,7 +1,12 @@
 import Image from "next/image";
+import { cookies } from "next/headers";
 import Link from "next/link";
+import { parseSessionToken, SESSION_COOKIE_NAME } from "@/lib/session";
 
-export function GlobalNavbar() {
+export async function GlobalNavbar() {
+  const cookieStore = await cookies();
+  const session = parseSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
+
   return (
     <header className="mx-auto w-full max-w-7xl px-5 pt-6 sm:px-8 sm:pt-7">
       <div className="flex items-center justify-between gap-4">
@@ -23,9 +28,20 @@ export function GlobalNavbar() {
           <Link href="/app" className="nav-quiet-link">
             Workspace
           </Link>
-          <Link href="/login" className="nav-quiet-link">
-            Login
-          </Link>
+          {session ? (
+            <>
+              <span className="hidden text-sm text-[var(--ink-soft)] sm:inline-block">
+                {session.user.displayName}
+              </span>
+              <Link href="/api/auth/logout" className="nav-quiet-link">
+                Logout
+              </Link>
+            </>
+          ) : (
+            <Link href="/login" className="nav-quiet-link">
+              Login
+            </Link>
+          )}
         </nav>
       </div>
     </header>

@@ -32,7 +32,7 @@ export default function Home() {
             <Link href="/app/onboarding" className="button-secondary px-6 py-3 text-base">
               Connect ER:LC Server
             </Link>
-            <Link href="/login" className="button-secondary px-6 py-3 text-base">
+            <Link href="/api/auth/discord/login" className="button-secondary px-6 py-3 text-base">
               Sign In with Discord
             </Link>
           </div>
