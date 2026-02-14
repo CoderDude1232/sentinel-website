@@ -6,6 +6,7 @@ import {
   getModerationCases,
   updateModerationCase,
 } from "@/lib/workspace-store";
+import { verifyRobloxUsername } from "@/lib/roblox-api";
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -33,9 +34,9 @@ export async function POST(request: NextRequest) {
     return unauthorized();
   }
 
-  let body: { type?: string; player?: string; owner?: string; status?: string };
+  let body: { type?: string; player?: string; owner?: string; status?: string; playerSource?: "online" | "offline" };
   try {
-    body = (await request.json()) as { type?: string; player?: string; owner?: string; status?: string };
+    body = (await request.json()) as { type?: string; player?: string; owner?: string; status?: string; playerSource?: "online" | "offline" };
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
@@ -45,11 +46,24 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const verifiedPlayer = await verifyRobloxUsername(body.player);
+    if (!verifiedPlayer) {
+      return NextResponse.json(
+        {
+          error:
+            body.playerSource === "online"
+              ? "Selected online player could not be verified as a valid Roblox username."
+              : "Offline player username is not a valid Roblox username.",
+        },
+        { status: 400 },
+      );
+    }
+
     await ensureWorkspaceSeed(user);
     const record = await addModerationCase({
       userId: user.id,
       type: body.type,
-      player: body.player,
+      player: verifiedPlayer.name,
       owner: body.owner?.trim() || user.displayName,
       status: body.status?.trim() || "Queued",
     });

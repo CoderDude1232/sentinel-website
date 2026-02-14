@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { UiSelect } from "@/components/ui-select";
 
 type InfractionData = {
   stats: Array<{ type: string; count: number }>;
@@ -16,9 +17,18 @@ type InfractionData = {
   error?: string;
 };
 
+type OnlinePlayersResponse = {
+  onlinePlayers?: Array<{ id: number; username: string; displayName: string }>;
+  error?: string;
+};
+
 export default function InfractionsPage() {
   const [data, setData] = useState<InfractionData>({ stats: [], cases: [] });
-  const [target, setTarget] = useState("");
+  const [targetSource, setTargetSource] = useState<"online" | "offline">("online");
+  const [onlinePlayers, setOnlinePlayers] = useState<Array<{ id: number; username: string; displayName: string }>>([]);
+  const [selectedOnlineTarget, setSelectedOnlineTarget] = useState("");
+  const [offlineTarget, setOfflineTarget] = useState("");
+  const [playersLoading, setPlayersLoading] = useState(false);
   const [level, setLevel] = useState("Warning");
   const [issuer, setIssuer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,11 +43,38 @@ export default function InfractionsPage() {
     setData(payload);
   }, []);
 
+  const loadOnlinePlayers = useCallback(async () => {
+    setPlayersLoading(true);
+    try {
+      const response = await fetch("/api/integrations/erlc/players", { cache: "no-store" });
+      const payload = (await response.json().catch(() => ({}))) as OnlinePlayersResponse;
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to load online players");
+      }
+      const players = payload.onlinePlayers ?? [];
+      setOnlinePlayers(players);
+      setSelectedOnlineTarget((current) => {
+        if (current && players.some((item) => item.username === current)) {
+          return current;
+        }
+        return players[0]?.username ?? "";
+      });
+    } catch (error) {
+      setOnlinePlayers([]);
+      setSelectedOnlineTarget("");
+      setMessage(error instanceof Error ? error.message : "Failed to load online players");
+    } finally {
+      setPlayersLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    void load().catch((error) => {
+    void Promise.all([load(), loadOnlinePlayers()]).catch((error) => {
       setMessage(error instanceof Error ? error.message : "Failed to load infractions");
     });
-  }, [load]);
+  }, [load, loadOnlinePlayers]);
+
+  const resolvedTarget = targetSource === "online" ? selectedOnlineTarget.trim() : offlineTarget.trim();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,13 +84,15 @@ export default function InfractionsPage() {
       const response = await fetch("/api/panels/infractions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target, level, issuer }),
+        body: JSON.stringify({ target: resolvedTarget, targetSource, level, issuer }),
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to create infraction");
       }
-      setTarget("");
+      if (targetSource === "offline") {
+        setOfflineTarget("");
+      }
       await load();
       setMessage("Infraction logged.");
     } catch (error) {
@@ -82,29 +121,76 @@ export default function InfractionsPage() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold tracking-tight">Recent cases</h2>
           <form onSubmit={handleSubmit} className="flex flex-wrap gap-2">
-            <input
-              value={target}
-              onChange={(event) => setTarget(event.target.value)}
-              className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
-              placeholder="Target"
-            />
-            <select
+            <div className="min-w-[280px] rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTargetSource("online")}
+                  className={`px-3 py-1.5 text-xs ${targetSource === "online" ? "button-primary" : "button-secondary"}`}
+                >
+                  Online players
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTargetSource("offline")}
+                  className={`px-3 py-1.5 text-xs ${targetSource === "offline" ? "button-primary" : "button-secondary"}`}
+                >
+                  Offline player
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void loadOnlinePlayers()}
+                  className="button-secondary px-3 py-1.5 text-xs"
+                  disabled={playersLoading}
+                >
+                  {playersLoading ? "Refreshing..." : "Refresh"}
+                </button>
+              </div>
+
+              {targetSource === "online" ? (
+                <div className="mt-2 min-w-[260px]">
+                  {onlinePlayers.length ? (
+                    <UiSelect
+                      value={selectedOnlineTarget || onlinePlayers[0].username}
+                      onChange={(value) => setSelectedOnlineTarget(value)}
+                      options={onlinePlayers.map((playerEntry) => ({
+                        value: playerEntry.username,
+                        label: `${playerEntry.username} (${playerEntry.displayName})`,
+                      }))}
+                    />
+                  ) : (
+                    <p className="text-sm text-[var(--ink-soft)]">
+                      No verified online players found. Use Offline player entry.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <input
+                  value={offlineTarget}
+                  onChange={(event) => setOfflineTarget(event.target.value)}
+                  className="mt-2 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+                  placeholder="Offline Roblox username"
+                />
+              )}
+            </div>
+            <UiSelect
               value={level}
-              onChange={(event) => setLevel(event.target.value)}
-              className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
-            >
-              <option>Warning</option>
-              <option>Strike</option>
-              <option>Suspension</option>
-              <option>Termination</option>
-            </select>
+              onChange={(value) => setLevel(value)}
+              className="min-w-[170px]"
+              options={[
+                { value: "Warning", label: "Warning" },
+                { value: "Strike", label: "Strike" },
+                { value: "Suspension", label: "Suspension" },
+                { value: "Termination", label: "Termination" },
+              ]}
+            />
             <input
               value={issuer}
               onChange={(event) => setIssuer(event.target.value)}
               className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
               placeholder="Issuer (optional)"
             />
-            <button className="button-primary px-3 py-2 text-sm" type="submit" disabled={loading || !target.trim()}>
+            <button className="button-primary px-3 py-2 text-sm" type="submit" disabled={loading || !resolvedTarget}>
               {loading ? "Saving..." : "Log infraction"}
             </button>
           </form>

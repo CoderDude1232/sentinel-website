@@ -88,3 +88,7 @@ export async function fetchErlcServerSnapshot(serverKey: string): Promise<{
 
   return { server, players, queue };
 }
+
+export async function fetchErlcPlayers(serverKey: string): Promise<ErlcRequestResult> {
+  return request("/server/players", serverKey);
+}

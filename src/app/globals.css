@@ -258,6 +258,8 @@ body {
   left: 0;
   right: 0;
   z-index: 24;
+  max-height: 240px;
+  overflow-y: auto;
   border: 1px solid rgba(216, 29, 56, 0.46);
   border-radius: 0.62rem;
   background:

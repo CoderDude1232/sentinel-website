@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { UiSelect } from "@/components/ui-select";
 
 type ModerationCase = {
   id: number;
@@ -10,6 +11,11 @@ type ModerationCase = {
   status: string;
   owner: string;
   createdAt: string;
+};
+
+type OnlinePlayersResponse = {
+  onlinePlayers?: Array<{ id: number; username: string; displayName: string }>;
+  error?: string;
 };
 
 const safeguards = [
@@ -22,7 +28,11 @@ const safeguards = [
 export default function ModerationPage() {
   const [cases, setCases] = useState<ModerationCase[]>([]);
   const [type, setType] = useState("Mod Call");
-  const [player, setPlayer] = useState("");
+  const [playerSource, setPlayerSource] = useState<"online" | "offline">("online");
+  const [onlinePlayers, setOnlinePlayers] = useState<Array<{ id: number; username: string; displayName: string }>>([]);
+  const [selectedOnlinePlayer, setSelectedOnlinePlayer] = useState("");
+  const [offlinePlayer, setOfflinePlayer] = useState("");
+  const [playersLoading, setPlayersLoading] = useState(false);
   const [owner, setOwner] = useState("");
   const [status, setStatus] = useState("Queued");
   const [loading, setLoading] = useState(false);
@@ -37,16 +47,42 @@ export default function ModerationPage() {
     setCases(payload.cases ?? []);
   }, []);
 
+  const loadOnlinePlayers = useCallback(async () => {
+    setPlayersLoading(true);
+    try {
+      const response = await fetch("/api/integrations/erlc/players", { cache: "no-store" });
+      const payload = (await response.json().catch(() => ({}))) as OnlinePlayersResponse;
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to load online players");
+      }
+      const players = payload.onlinePlayers ?? [];
+      setOnlinePlayers(players);
+      setSelectedOnlinePlayer((current) => {
+        if (current && players.some((item) => item.username === current)) {
+          return current;
+        }
+        return players[0]?.username ?? "";
+      });
+    } catch (error) {
+      setOnlinePlayers([]);
+      setSelectedOnlinePlayer("");
+      setMessage(error instanceof Error ? error.message : "Failed to load online players");
+    } finally {
+      setPlayersLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    void loadCases().catch((error) => {
-      setMessage(error instanceof Error ? error.message : "Failed to load moderation cases");
+    void Promise.all([loadCases(), loadOnlinePlayers()]).catch((error) => {
+      setMessage(error instanceof Error ? error.message : "Failed to load moderation panel");
     });
-  }, [loadCases]);
+  }, [loadCases, loadOnlinePlayers]);
 
   const openCount = useMemo(
     () => cases.filter((item) => !["resolved", "closed"].includes(item.status.toLowerCase())).length,
     [cases],
   );
+  const resolvedPlayer = playerSource === "online" ? selectedOnlinePlayer.trim() : offlinePlayer.trim();
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,13 +92,15 @@ export default function ModerationPage() {
       const response = await fetch("/api/panels/moderation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, player, owner, status }),
+        body: JSON.stringify({ type, player: resolvedPlayer, playerSource, owner, status }),
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to create moderation case");
       }
-      setPlayer("");
+      if (playerSource === "offline") {
+        setOfflinePlayer("");
+      }
       await loadCases();
       setMessage("Moderation case created.");
     } catch (error) {
@@ -137,12 +175,58 @@ export default function ModerationPage() {
         <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
           <h2 className="text-lg font-semibold tracking-tight">Create moderation case</h2>
           <form onSubmit={handleCreate} className="mt-3 space-y-2">
-            <input
-              value={player}
-              onChange={(event) => setPlayer(event.target.value)}
-              className="w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
-              placeholder="Player name"
-            />
+            <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPlayerSource("online")}
+                  className={`px-3 py-1.5 text-xs ${playerSource === "online" ? "button-primary" : "button-secondary"}`}
+                >
+                  Online players
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPlayerSource("offline")}
+                  className={`px-3 py-1.5 text-xs ${playerSource === "offline" ? "button-primary" : "button-secondary"}`}
+                >
+                  Offline player
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void loadOnlinePlayers()}
+                  className="button-secondary px-3 py-1.5 text-xs"
+                  disabled={playersLoading}
+                >
+                  {playersLoading ? "Refreshing..." : "Refresh"}
+                </button>
+              </div>
+
+              {playerSource === "online" ? (
+                <div className="mt-2">
+                  {onlinePlayers.length ? (
+                    <UiSelect
+                      value={selectedOnlinePlayer || onlinePlayers[0].username}
+                      onChange={(value) => setSelectedOnlinePlayer(value)}
+                      options={onlinePlayers.map((playerEntry) => ({
+                        value: playerEntry.username,
+                        label: `${playerEntry.username} (${playerEntry.displayName})`,
+                      }))}
+                    />
+                  ) : (
+                    <p className="text-sm text-[var(--ink-soft)]">
+                      No verified online players found. Use Offline player entry.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <input
+                  value={offlinePlayer}
+                  onChange={(event) => setOfflinePlayer(event.target.value)}
+                  className="mt-2 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+                  placeholder="Offline Roblox username"
+                />
+              )}
+            </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <input
                 value={type}
@@ -163,7 +247,7 @@ export default function ModerationPage() {
               className="w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
               placeholder="Owner (optional)"
             />
-            <button className="button-primary mt-1 px-3 py-2 text-sm" type="submit" disabled={loading || !player.trim()}>
+            <button className="button-primary mt-1 px-3 py-2 text-sm" type="submit" disabled={loading || !resolvedPlayer}>
               {loading ? "Saving..." : "Create case"}
             </button>
           </form>

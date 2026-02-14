@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
 import { addInfraction, ensureWorkspaceSeed, getInfractions } from "@/lib/workspace-store";
+import { verifyRobloxUsername } from "@/lib/roblox-api";
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -28,9 +29,9 @@ export async function POST(request: NextRequest) {
     return unauthorized();
   }
 
-  let body: { target?: string; level?: string; issuer?: string; appealStatus?: string };
+  let body: { target?: string; level?: string; issuer?: string; appealStatus?: string; targetSource?: "online" | "offline" };
   try {
-    body = (await request.json()) as { target?: string; level?: string; issuer?: string; appealStatus?: string };
+    body = (await request.json()) as { target?: string; level?: string; issuer?: string; appealStatus?: string; targetSource?: "online" | "offline" };
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
@@ -40,10 +41,23 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const verifiedTarget = await verifyRobloxUsername(body.target);
+    if (!verifiedTarget) {
+      return NextResponse.json(
+        {
+          error:
+            body.targetSource === "online"
+              ? "Selected online player could not be verified as a valid Roblox username."
+              : "Offline player username is not a valid Roblox username.",
+        },
+        { status: 400 },
+      );
+    }
+
     await ensureWorkspaceSeed(user);
     const record = await addInfraction({
       userId: user.id,
-      target: body.target,
+      target: verifiedTarget.name,
       level: body.level,
       issuer: body.issuer?.trim() || user.displayName,
       appealStatus: body.appealStatus?.trim() || "Open",
