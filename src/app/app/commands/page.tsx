@@ -37,12 +37,14 @@ type CommandsResponse = {
 };
 
 const defaultPolicy: CommandPolicy = {
-  allowlist: [":announce", ":pm", ":warn", ":tp"],
+  allowlist: [":announce", ":pm", ":warn", ":kick", ":ban", ":tban", ":unban", ":tp"],
   requiresApproval: true,
   cooldownSeconds: 15,
 };
 
 const EXECUTION_DISPLAY_LIMIT = 24;
+const COMMAND_PRESETS = [":warn", ":kick", ":ban", ":tban", ":unban"];
+const REQUIRES_REASON = new Set([":announce", ":pm", ":warn", ":kick", ":ban", ":tban"]);
 
 export default function CommandsPage() {
   const [policy, setPolicy] = useState<CommandPolicy>(defaultPolicy);
@@ -81,6 +83,11 @@ export default function CommandsPage() {
   const visibleExecutions = useMemo(
     () => executions.slice(0, EXECUTION_DISPLAY_LIMIT),
     [executions],
+  );
+
+  const reasonRequired = useMemo(
+    () => REQUIRES_REASON.has(command.toLowerCase()),
+    [command],
   );
 
   const load = useCallback(async () => {
@@ -292,6 +299,22 @@ export default function CommandsPage() {
           subtitle="Choose an online target or leave Global selected to submit without a specific player target."
         >
           <form onSubmit={runCommand} className="space-y-3">
+            <div className="flex flex-wrap gap-1.5">
+              {COMMAND_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setCommand(preset)}
+                  className={`rounded-md border px-2.5 py-1 text-xs ${
+                    command === preset
+                      ? "border-[rgba(216,29,56,0.45)] bg-[rgba(216,29,56,0.16)] text-[var(--ink-strong)]"
+                      : "border-[var(--line)] bg-[rgba(255,255,255,0.02)] text-[var(--ink-soft)]"
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <UiSelect
                 value={command}
@@ -309,13 +332,13 @@ export default function CommandsPage() {
             <input
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="Optional note"
+              placeholder={reasonRequired ? "Reason/message (required)" : "Optional note"}
               className="w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
             />
             <button
               className="button-primary px-4 py-2 text-sm"
               type="submit"
-              disabled={loading || !command.trim()}
+              disabled={loading || !command.trim() || (reasonRequired && !notes.trim())}
             >
               {loading ? "Submitting..." : "Submit command"}
             </button>

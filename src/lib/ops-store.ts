@@ -50,10 +50,25 @@ export type AuditEvent = {
 };
 
 const DEFAULT_COMMAND_POLICY: CommandPolicy = {
-  allowlist: [":announce", ":pm", ":warn", ":tp"],
+  allowlist: [":announce", ":pm", ":warn", ":kick", ":ban", ":tban", ":unban", ":tp"],
   requiresApproval: true,
   cooldownSeconds: 15,
 };
+
+const LEGACY_DEFAULT_COMMAND_ALLOWLIST = [":announce", ":pm", ":warn", ":tp"];
+
+function normalizeAllowlist(values: string[]): string[] {
+  return values.map((value) => value.trim().toLowerCase()).filter(Boolean).sort();
+}
+
+function isLegacyDefaultAllowlist(values: string[]): boolean {
+  const normalized = normalizeAllowlist(values);
+  const legacy = normalizeAllowlist(LEGACY_DEFAULT_COMMAND_ALLOWLIST);
+  if (normalized.length !== legacy.length) {
+    return false;
+  }
+  return normalized.every((entry, index) => entry === legacy[index]);
+}
 
 const DEFAULT_INFRACTION_POLICY: InfractionPolicy = {
   warningPoints: 1,
@@ -194,11 +209,24 @@ export async function getCommandPolicy(userId: string): Promise<CommandPolicy> {
     return DEFAULT_COMMAND_POLICY;
   }
 
-  return {
+  const parsedPolicy: CommandPolicy = {
     allowlist: parseStringArray(row.allowlist, DEFAULT_COMMAND_POLICY.allowlist),
     requiresApproval: row.requires_approval,
     cooldownSeconds: Math.max(0, Number(row.cooldown_seconds ?? DEFAULT_COMMAND_POLICY.cooldownSeconds)),
   };
+
+  if (isLegacyDefaultAllowlist(parsedPolicy.allowlist)) {
+    await upsertCommandPolicy(userId, {
+      ...parsedPolicy,
+      allowlist: DEFAULT_COMMAND_POLICY.allowlist,
+    });
+    return {
+      ...parsedPolicy,
+      allowlist: DEFAULT_COMMAND_POLICY.allowlist,
+    };
+  }
+
+  return parsedPolicy;
 }
 
 export async function upsertCommandPolicy(userId: string, policy: CommandPolicy): Promise<CommandPolicy> {
@@ -660,4 +688,3 @@ export async function listAuditEvents(input: {
     createdAt: toIso(row.created_at),
   }));
 }
-

@@ -163,6 +163,10 @@ function buildErlcCommandText(input: {
   return segments.filter(Boolean).join(" ");
 }
 
+const REQUIRES_TARGET_COMMANDS = new Set([":pm", ":warn", ":kick", ":ban", ":tban", ":unban", ":tp"]);
+const REQUIRES_REASON_COMMANDS = new Set([":announce", ":pm", ":warn", ":kick", ":ban", ":tban"]);
+const SKIP_ONLINE_TARGET_CHECK_COMMANDS = new Set([":unban"]);
+
 export async function GET(request: NextRequest) {
   const user = getSessionUserFromRequest(request);
   if (!user) {
@@ -281,8 +285,18 @@ export async function POST(request: NextRequest) {
   const targetPlayer = body.targetPlayer?.trim() ?? "";
   const isGlobalTarget = !targetPlayer;
   const resolvedTarget = isGlobalTarget ? "GLOBAL" : targetPlayer;
+  const commandKey = command.toLowerCase();
+  const executionNotes = body.notes?.trim() || null;
   if (!command) {
     return NextResponse.json({ error: "command is required" }, { status: 400 });
+  }
+
+  if (REQUIRES_TARGET_COMMANDS.has(commandKey) && isGlobalTarget) {
+    return NextResponse.json({ error: `Target player is required for ${command}.` }, { status: 400 });
+  }
+
+  if (REQUIRES_REASON_COMMANDS.has(commandKey) && !executionNotes) {
+    return NextResponse.json({ error: `Reason/message is required for ${command}.` }, { status: 400 });
   }
 
   try {
@@ -346,7 +360,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Connect ER:LC before running commands." }, { status: 400 });
     }
 
-    if (!isGlobalTarget) {
+    if (!isGlobalTarget && !SKIP_ONLINE_TARGET_CHECK_COMMANDS.has(commandKey)) {
       const playersResponse = await fetchErlcPlayers(erlcKey.serverKey);
       const onlineNames = listPlayerNames(playersResponse.data);
       const verifiedMap = await verifyRobloxUsernames(onlineNames);
@@ -376,8 +390,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Target player is not online in ER:LC.", execution: blocked }, { status: 400 });
       }
     }
-
-    const executionNotes = body.notes?.trim() || null;
 
     if (policy.requiresApproval) {
       const queued = await createCommandExecution({
