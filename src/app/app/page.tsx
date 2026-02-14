@@ -18,6 +18,8 @@ const emptySummary: DashboardSummary = {
 export default function AppOverviewPage() {
   const [summary, setSummary] = useState<DashboardSummary>(emptySummary);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
   const [error, setError] = useState("");
 
   const loadSummary = useCallback(async () => {
@@ -44,6 +46,31 @@ export default function AppOverviewPage() {
     return () => window.clearInterval(interval);
   }, [loadSummary]);
 
+  async function forceSync() {
+    setSyncing(true);
+    setSyncMessage("");
+    setError("");
+    try {
+      const response = await fetch("/api/dashboard/refresh", {
+        method: "POST",
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to refresh in-game state");
+      }
+      await loadSummary();
+      setSyncMessage(payload.message ?? "In-game refresh complete.");
+    } catch (refreshError) {
+      setError(refreshError instanceof Error ? refreshError.message : "Failed to refresh in-game state");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -58,8 +85,16 @@ export default function AppOverviewPage() {
           <button onClick={() => void loadSummary()} className="button-secondary px-4 py-2 text-sm" type="button">
             Refresh data
           </button>
+          <button onClick={() => void forceSync()} className="button-primary px-4 py-2 text-sm" type="button" disabled={syncing}>
+            {syncing ? "Syncing..." : "Force Sync In-Game"}
+          </button>
         </div>
       </div>
+      {syncMessage ? (
+        <p className="rounded-lg border border-[rgba(82,196,122,0.35)] bg-[rgba(82,196,122,0.12)] px-3 py-2 text-sm">
+          {syncMessage}
+        </p>
+      ) : null}
 
       {error ? (
         <p className="rounded-lg border border-[rgba(216,29,56,0.35)] bg-[rgba(216,29,56,0.12)] px-3 py-2 text-sm">
