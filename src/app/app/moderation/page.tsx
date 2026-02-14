@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { UiSelect } from "@/components/ui-select";
 import { CollapsibleSection } from "@/components/collapsible-section";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 
 type ModerationCase = {
   id: number;
@@ -67,7 +68,7 @@ export default function ModerationPage() {
     setCases(payload.cases ?? []);
   }, []);
 
-  const loadOnlinePlayers = useCallback(async () => {
+  const loadOnlinePlayers = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     setPlayersLoading(true);
     try {
       const response = await fetch("/api/integrations/erlc/players", { cache: "no-store" });
@@ -86,7 +87,9 @@ export default function ModerationPage() {
     } catch (error) {
       setOnlinePlayers([]);
       setSelectedOnlinePlayer("");
-      setMessage(error instanceof Error ? error.message : "Failed to load online players");
+      if (!silent) {
+        setMessage(error instanceof Error ? error.message : "Failed to load online players");
+      }
     } finally {
       setPlayersLoading(false);
     }
@@ -97,6 +100,11 @@ export default function ModerationPage() {
       setMessage(error instanceof Error ? error.message : "Failed to load moderation panel");
     });
   }, [loadCases, loadOnlinePlayers]);
+
+  useAutoRefresh(
+    () => loadOnlinePlayers({ silent: true }),
+    { intervalMs: 12000, runImmediately: false, onlyWhenVisible: true },
+  );
 
   const openCount = useMemo(
     () => cases.filter((item) => !["resolved", "closed"].includes(item.status.toLowerCase())).length,

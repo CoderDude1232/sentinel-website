@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { UiSelect } from "@/components/ui-select";
 import { CollapsibleSection } from "@/components/collapsible-section";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 
 type InfractionPolicy = {
   warningPoints: number;
@@ -75,7 +76,7 @@ export default function InfractionsPage() {
     setData(payload);
   }, []);
 
-  const loadOnlinePlayers = useCallback(async () => {
+  const loadOnlinePlayers = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     setPlayersLoading(true);
     try {
       const response = await fetch("/api/integrations/erlc/players", { cache: "no-store" });
@@ -94,7 +95,9 @@ export default function InfractionsPage() {
     } catch (error) {
       setOnlinePlayers([]);
       setSelectedOnlineTarget("");
-      setMessage(error instanceof Error ? error.message : "Failed to load online players");
+      if (!silent) {
+        setMessage(error instanceof Error ? error.message : "Failed to load online players");
+      }
     } finally {
       setPlayersLoading(false);
     }
@@ -105,6 +108,11 @@ export default function InfractionsPage() {
       setMessage(error instanceof Error ? error.message : "Failed to load infractions");
     });
   }, [load, loadOnlinePlayers]);
+
+  useAutoRefresh(
+    () => loadOnlinePlayers({ silent: true }),
+    { intervalMs: 12000, runImmediately: false, onlyWhenVisible: true },
+  );
 
   const resolvedTarget = targetSource === "online" ? selectedOnlineTarget.trim() : offlineTarget.trim();
 

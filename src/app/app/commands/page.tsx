@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { UiSelect } from "@/components/ui-select";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 
 type CommandPolicy = {
   allowlist: string[];
@@ -95,11 +96,37 @@ export default function CommandsPage() {
     );
   }, []);
 
+  const refreshLiveOptions = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
+    try {
+      const response = await fetch("/api/panels/commands", { cache: "no-store" });
+      const payload = (await response.json().catch(() => ({}))) as CommandsResponse;
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to refresh live command options");
+      }
+
+      const players = payload.onlinePlayers ?? [];
+      setOnlinePlayers(players);
+      setLive(payload.live);
+      setTargetPlayer((current) =>
+        current && players.some((player) => player.username === current) ? current : players[0]?.username ?? "",
+      );
+    } catch (error) {
+      if (!silent) {
+        setMessage(error instanceof Error ? error.message : "Failed to refresh live command options");
+      }
+    }
+  }, []);
+
   useEffect(() => {
     void load().catch((error) => {
       setMessage(error instanceof Error ? error.message : "Failed to load command panel");
     });
   }, [load]);
+
+  useAutoRefresh(
+    () => refreshLiveOptions({ silent: true }),
+    { intervalMs: 12000, runImmediately: false, onlyWhenVisible: true },
+  );
 
   async function savePolicy(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

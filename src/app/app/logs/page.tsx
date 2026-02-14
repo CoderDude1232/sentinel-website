@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { UiSelect } from "@/components/ui-select";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 
 type AuditEvent = {
   id: number;
@@ -44,9 +45,11 @@ export default function LogsPage() {
     return unique.sort();
   }, [events]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setMessage("");
+  const load = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (!silent) {
+      setLoading(true);
+      setMessage("");
+    }
     try {
       const params = new URLSearchParams();
       if (moduleFilter) params.set("module", moduleFilter);
@@ -61,15 +64,24 @@ export default function LogsPage() {
       }
       setEvents(payload.events ?? []);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Failed to load audit events");
+      if (!silent) {
+        setMessage(error instanceof Error ? error.message : "Failed to load audit events");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [moduleFilter, actionFilter, actorFilter]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useAutoRefresh(
+    () => load({ silent: true }),
+    { intervalMs: 15000, runImmediately: false, onlyWhenVisible: true },
+  );
 
   const exportHref = useMemo(() => {
     const params = new URLSearchParams();

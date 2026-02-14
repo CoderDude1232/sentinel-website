@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { UiSelect } from "@/components/ui-select";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 
 type FeatureItem = {
   id: number;
@@ -186,7 +187,7 @@ export function AdvancedFeaturePanel({
     setItems(payload.items ?? []);
   }, [featureKey]);
 
-  const loadLiveContext = useCallback(async () => {
+  const loadLiveContext = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     setLoadingLive(true);
     try {
       const [serverResponse, playersResponse] = await Promise.all([
@@ -201,7 +202,9 @@ export function AdvancedFeaturePanel({
         setErlcSnapshot(null);
       } else {
         const errorPayload = (await serverResponse.json().catch(() => ({}))) as { error?: string };
-        setMessage(errorPayload.error ?? "Failed to load ER:LC server snapshot.");
+        if (!silent) {
+          setMessage(errorPayload.error ?? "Failed to load ER:LC server snapshot.");
+        }
       }
 
       if (playersResponse.ok) {
@@ -219,10 +222,14 @@ export function AdvancedFeaturePanel({
         setSelectedOnlinePlayer("");
       } else {
         const errorPayload = (await playersResponse.json().catch(() => ({}))) as { error?: string };
-        setMessage(errorPayload.error ?? "Failed to load ER:LC online players.");
+        if (!silent) {
+          setMessage(errorPayload.error ?? "Failed to load ER:LC online players.");
+        }
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Failed to load ER:LC live context");
+      if (!silent) {
+        setMessage(error instanceof Error ? error.message : "Failed to load ER:LC live context");
+      }
     } finally {
       setLoadingLive(false);
     }
@@ -236,6 +243,11 @@ export function AdvancedFeaturePanel({
     }, 0);
     return () => window.clearTimeout(timer);
   }, [load, loadLiveContext]);
+
+  useAutoRefresh(
+    () => loadLiveContext({ silent: true }),
+    { intervalMs: 12000, runImmediately: false, onlyWhenVisible: true },
+  );
 
   async function createItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
