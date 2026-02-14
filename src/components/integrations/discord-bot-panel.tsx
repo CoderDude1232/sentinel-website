@@ -181,6 +181,7 @@ export function DiscordBotPanel() {
       const payload = (await response.json().catch(() => ({}))) as {
         error?: string;
         delivered?: boolean;
+        status?: number;
       };
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to send bot test message.");
@@ -189,7 +190,7 @@ export function DiscordBotPanel() {
         kind: payload.delivered ? "success" : "error",
         message: payload.delivered
           ? "Test message sent through Discord bot."
-          : "Bot integration is active but message delivery failed.",
+          : `Bot delivery failed${payload.status ? ` (HTTP ${payload.status})` : ""}${payload.error ? `: ${payload.error}` : "."}`,
       });
     } catch (error) {
       setStatus({
@@ -332,4 +333,3 @@ export function DiscordBotPanel() {
     </article>
   );
 }
-

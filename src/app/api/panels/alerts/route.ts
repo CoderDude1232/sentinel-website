@@ -78,6 +78,8 @@ export async function POST(request: NextRequest) {
     const botIntegration = await getDiscordBotIntegration(user.id);
     let webhookDelivered = false;
     let botDelivered = false;
+    let botDeliveryStatus: number | null = null;
+    let botDeliveryError: string | null = null;
     const botConfigured =
       isDiscordBotConfigured() &&
       botIntegration.enabled &&
@@ -92,16 +94,21 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.sendWebhook && botConfigured && botIntegration.alertsChannelId) {
-      botDelivered = await sendDiscordBotMessage(
+      const botSend = await sendDiscordBotMessage(
         botIntegration.alertsChannelId,
         `Sentinel Alert\nLevel: ${level}\nSource: ${source}\nEvent: ${event}`,
       );
+      botDelivered = botSend.ok;
+      botDeliveryStatus = botSend.status;
+      botDeliveryError = botSend.error;
     }
 
     return NextResponse.json({
       ok: true,
       webhookDelivered,
       botDelivered,
+      botDeliveryStatus,
+      botDeliveryError,
       webhookConfigured: Boolean(settings.webhookUrl),
       botConfigured,
     });

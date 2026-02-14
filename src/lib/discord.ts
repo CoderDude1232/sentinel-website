@@ -47,6 +47,12 @@ export type DiscordGuildChannel = {
   type: number;
 };
 
+export type DiscordBotSendResult = {
+  ok: boolean;
+  status: number;
+  error: string | null;
+};
+
 function toTokenBundle(payload: DiscordOAuthTokenResponse): DiscordTokenBundle {
   if (!payload.access_token) {
     throw new Error(payload.error_description ?? payload.error ?? "Failed to acquire Discord token");
@@ -277,7 +283,10 @@ export async function fetchDiscordBotGuildChannels(guildId: string): Promise<Dis
     }));
 }
 
-export async function sendDiscordBotMessage(channelId: string, content: string): Promise<boolean> {
+export async function sendDiscordBotMessage(
+  channelId: string,
+  content: string,
+): Promise<DiscordBotSendResult> {
   try {
     const response = await fetch(`${DISCORD_API_BASE}/channels/${channelId}/messages`, {
       method: "POST",
@@ -289,8 +298,32 @@ export async function sendDiscordBotMessage(channelId: string, content: string):
       cache: "no-store",
     });
 
-    return response.ok;
-  } catch {
-    return false;
+    if (response.ok) {
+      return { ok: true, status: response.status, error: null };
+    }
+
+    let errorMessage = "Discord API rejected the message.";
+    try {
+      const payload = (await response.json()) as { message?: string; code?: number };
+      if (payload?.message) {
+        errorMessage = payload.code
+          ? `${payload.message} (code ${payload.code})`
+          : payload.message;
+      }
+    } catch {
+      // keep fallback message
+    }
+
+    return {
+      ok: false,
+      status: response.status,
+      error: errorMessage,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 0,
+      error: error instanceof Error ? error.message : "Network error while sending Discord message.",
+    };
   }
 }

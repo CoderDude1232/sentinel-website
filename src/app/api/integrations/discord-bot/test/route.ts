@@ -37,10 +37,14 @@ export async function POST(request: NextRequest) {
       `Sentinel test alert for **${integration.guildName ?? "selected guild"}**.`,
     );
 
-    return NextResponse.json({ ok: true, delivered });
+    return NextResponse.json({
+      ok: true,
+      delivered: delivered.ok,
+      status: delivered.status,
+      error: delivered.error,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to send test bot message";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
