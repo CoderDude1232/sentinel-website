@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { UiSelect } from "@/components/ui-select";
+import { CollapsibleSection } from "@/components/collapsible-section";
 
 type InfractionData = {
   stats: Array<{ type: string; count: number }>;
@@ -21,6 +22,11 @@ type OnlinePlayersResponse = {
   onlinePlayers?: Array<{ id: number; username: string; displayName: string }>;
   error?: string;
 };
+
+const targetSourceOptions: Array<{ value: "online" | "offline"; label: string }> = [
+  { value: "online", label: "Online players" },
+  { value: "offline", label: "Offline player" },
+];
 
 export default function InfractionsPage() {
   const [data, setData] = useState<InfractionData>({ stats: [], cases: [] });
@@ -108,42 +114,41 @@ export default function InfractionsPage() {
       <h1 className="mt-3 text-3xl font-semibold tracking-tight">Disciplinary Workflow</h1>
       {message ? <p className="mt-2 text-sm text-[var(--ink-soft)]">{message}</p> : null}
 
-      <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {data.stats.map((item) => (
-          <article key={item.type} className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
-            <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">{item.type}</p>
-            <p className="mt-1 text-2xl font-semibold">{item.count}</p>
-          </article>
-        ))}
-      </section>
+      <section className="mt-5 space-y-3">
+        <CollapsibleSection
+          title="Infraction stats"
+          subtitle="Current counts by disciplinary level."
+          meta={String(data.stats.length)}
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {data.stats.map((item) => (
+              <article key={item.type} className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">{item.type}</p>
+                <p className="mt-1 text-2xl font-semibold">{item.count}</p>
+              </article>
+            ))}
+          </div>
+        </CollapsibleSection>
 
-      <section className="mt-5 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold tracking-tight">Recent cases</h2>
+        <CollapsibleSection
+          title="Log new infraction"
+          subtitle="Choose online/offline target and submit discipline level."
+        >
           <form onSubmit={handleSubmit} className="flex flex-wrap gap-2">
             <div className="min-w-[280px] rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-2">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTargetSource("online")}
-                  className={`px-3 py-1.5 text-xs ${targetSource === "online" ? "button-primary" : "button-secondary"}`}
-                >
-                  Online players
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTargetSource("offline")}
-                  className={`px-3 py-1.5 text-xs ${targetSource === "offline" ? "button-primary" : "button-secondary"}`}
-                >
-                  Offline player
-                </button>
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,220px)_auto]">
+                <UiSelect
+                  value={targetSource}
+                  onChange={(value) => setTargetSource(value)}
+                  options={targetSourceOptions}
+                />
                 <button
                   type="button"
                   onClick={() => void loadOnlinePlayers()}
-                  className="button-secondary px-3 py-1.5 text-xs"
+                  className="button-secondary px-3 py-2 text-sm"
                   disabled={playersLoading}
                 >
-                  {playersLoading ? "Refreshing..." : "Refresh"}
+                  {playersLoading ? "Refreshing..." : "Refresh online"}
                 </button>
               </div>
 
@@ -160,7 +165,7 @@ export default function InfractionsPage() {
                     />
                   ) : (
                     <p className="text-sm text-[var(--ink-soft)]">
-                      No verified online players found. Use Offline player entry.
+                      No verified online players found. Switch source to Offline player.
                     </p>
                   )}
                 </div>
@@ -194,25 +199,32 @@ export default function InfractionsPage() {
               {loading ? "Saving..." : "Log infraction"}
             </button>
           </form>
-        </div>
-        <div className="mt-3 space-y-2 text-sm">
-          {data.cases.map((item) => (
-            <div
-              key={item.id.toString()}
-              className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-semibold">{item.caseRef} - {item.level}</p>
-                <span className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
-                  Appeal: {item.appealStatus}
-                </span>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Recent cases"
+          subtitle="Latest disciplinary events in your workspace."
+          meta={String(data.cases.length)}
+        >
+          <div className="space-y-2 text-sm">
+            {data.cases.map((item) => (
+              <div
+                key={item.id.toString()}
+                className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-semibold">{item.caseRef} - {item.level}</p>
+                  <span className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+                    Appeal: {item.appealStatus}
+                  </span>
+                </div>
+                <p className="text-[var(--ink-soft)]">Target: {item.target}</p>
+                <p className="text-xs text-[var(--ink-soft)]">Issued by: {item.issuer}</p>
               </div>
-              <p className="text-[var(--ink-soft)]">Target: {item.target}</p>
-              <p className="text-xs text-[var(--ink-soft)]">Issued by: {item.issuer}</p>
-            </div>
-          ))}
-          {!data.cases.length ? <p className="text-[var(--ink-soft)]">No infractions logged yet.</p> : null}
-        </div>
+            ))}
+            {!data.cases.length ? <p className="text-[var(--ink-soft)]">No infractions logged yet.</p> : null}
+          </div>
+        </CollapsibleSection>
       </section>
     </div>
   );

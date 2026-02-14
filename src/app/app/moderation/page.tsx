@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { UiSelect } from "@/components/ui-select";
+import { CollapsibleSection } from "@/components/collapsible-section";
 
 type ModerationCase = {
   id: number;
@@ -23,6 +24,25 @@ const safeguards = [
   "All command submissions logged with actor and timestamp",
   "Evidence links required for escalated actions",
   "Webhook notifications for critical moderation events",
+];
+
+const playerSourceOptions: Array<{ value: "online" | "offline"; label: string }> = [
+  { value: "online", label: "Online players" },
+  { value: "offline", label: "Offline player" },
+];
+
+const caseTypeOptions: Array<{ value: string; label: string }> = [
+  { value: "Mod Call", label: "Mod Call" },
+  { value: "Traffic Stop", label: "Traffic Stop" },
+  { value: "Fail RP", label: "Fail RP" },
+  { value: "Exploit Review", label: "Exploit Review" },
+];
+
+const statusOptions: Array<{ value: string; label: string }> = [
+  { value: "Queued", label: "Queued" },
+  { value: "Investigating", label: "Investigating" },
+  { value: "Escalated", label: "Escalated" },
+  { value: "Resolved", label: "Resolved" },
 ];
 
 export default function ModerationPage() {
@@ -139,10 +159,13 @@ export default function ModerationPage() {
       <p className="mt-2 text-sm text-[var(--ink-soft)]">Open queue items: {openCount}</p>
       {message ? <p className="mt-3 text-sm text-[var(--ink-soft)]">{message}</p> : null}
 
-      <section className="mt-5 grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
-          <h2 className="text-lg font-semibold tracking-tight">Open moderation queue</h2>
-          <div className="mt-3 space-y-2 text-sm">
+      <section className="mt-5 space-y-3">
+        <CollapsibleSection
+          title="Open moderation queue"
+          subtitle="Review active cases and resolve when complete."
+          meta={`${openCount} open`}
+        >
+          <div className="space-y-2 text-sm">
             {cases.map((item) => (
               <div
                 key={item.id.toString()}
@@ -170,34 +193,27 @@ export default function ModerationPage() {
             ))}
             {!cases.length ? <p className="text-[var(--ink-soft)]">No moderation cases yet.</p> : null}
           </div>
-        </article>
+        </CollapsibleSection>
 
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
-          <h2 className="text-lg font-semibold tracking-tight">Create moderation case</h2>
-          <form onSubmit={handleCreate} className="mt-3 space-y-2">
+        <CollapsibleSection
+          title="Create moderation case"
+          subtitle="Select target player source and submit a new case."
+        >
+          <form onSubmit={handleCreate} className="space-y-2">
             <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-2">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPlayerSource("online")}
-                  className={`px-3 py-1.5 text-xs ${playerSource === "online" ? "button-primary" : "button-secondary"}`}
-                >
-                  Online players
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPlayerSource("offline")}
-                  className={`px-3 py-1.5 text-xs ${playerSource === "offline" ? "button-primary" : "button-secondary"}`}
-                >
-                  Offline player
-                </button>
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,220px)_auto]">
+                <UiSelect
+                  value={playerSource}
+                  onChange={(value) => setPlayerSource(value)}
+                  options={playerSourceOptions}
+                />
                 <button
                   type="button"
                   onClick={() => void loadOnlinePlayers()}
-                  className="button-secondary px-3 py-1.5 text-xs"
+                  className="button-secondary px-3 py-2 text-sm"
                   disabled={playersLoading}
                 >
-                  {playersLoading ? "Refreshing..." : "Refresh"}
+                  {playersLoading ? "Refreshing..." : "Refresh online"}
                 </button>
               </div>
 
@@ -214,7 +230,7 @@ export default function ModerationPage() {
                     />
                   ) : (
                     <p className="text-sm text-[var(--ink-soft)]">
-                      No verified online players found. Use Offline player entry.
+                      No verified online players found. Switch source to Offline player.
                     </p>
                   )}
                 </div>
@@ -228,18 +244,8 @@ export default function ModerationPage() {
               )}
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
-              <input
-                value={type}
-                onChange={(event) => setType(event.target.value)}
-                className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
-                placeholder="Case type"
-              />
-              <input
-                value={status}
-                onChange={(event) => setStatus(event.target.value)}
-                className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
-                placeholder="Status"
-              />
+              <UiSelect value={type} onChange={(value) => setType(value)} options={caseTypeOptions} />
+              <UiSelect value={status} onChange={(value) => setStatus(value)} options={statusOptions} />
             </div>
             <input
               value={owner}
@@ -251,16 +257,19 @@ export default function ModerationPage() {
               {loading ? "Saving..." : "Create case"}
             </button>
           </form>
+        </CollapsibleSection>
 
-          <h3 className="mt-5 text-sm font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
-            Command safeguards
-          </h3>
-          <ul className="mt-3 space-y-1.5 text-sm text-[var(--ink-soft)]">
+        <CollapsibleSection
+          title="Command safeguards"
+          subtitle="Current operational guardrails for moderation actions."
+          meta={String(safeguards.length)}
+        >
+          <ul className="space-y-1.5 text-sm text-[var(--ink-soft)]">
             {safeguards.map((item) => (
               <li key={item}>- {item}</li>
             ))}
           </ul>
-        </article>
+        </CollapsibleSection>
       </section>
     </div>
   );
