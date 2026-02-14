@@ -241,16 +241,20 @@ export async function POST(request: NextRequest) {
     if (erlcKey) {
       announcement.attempted = true;
       let commandResponse = await runErlcCommand(erlcKey.serverKey, announceCommand);
-      let retried = false;
-      if (shouldRetryCommandDispatch(commandResponse.status, commandResponse.data)) {
-        retried = true;
-        await wait(5200);
+      let attempts = 1;
+      while (attempts < 3 && shouldRetryCommandDispatch(commandResponse.status, commandResponse.data)) {
+        await wait(4200 + attempts * 1600);
+        attempts += 1;
         commandResponse = await runErlcCommand(erlcKey.serverKey, announceCommand);
       }
+      const retried = attempts > 1;
       announcement.status = commandResponse.status;
       announcement.delivered = commandResponse.ok;
       if (!commandResponse.ok) {
-        const reason = inferApiError(commandResponse.data);
+        let reason = inferApiError(commandResponse.data);
+        if (shouldRetryCommandDispatch(commandResponse.status, commandResponse.data)) {
+          reason = `ER:LC did not acknowledge command after ${attempts} attempts.`;
+        }
         announcement.error =
           reason ??
           (commandResponse.status === 422
@@ -258,7 +262,7 @@ export async function POST(request: NextRequest) {
             : "ER:LC rejected the announcement command.");
       }
       if (retried && !announcement.delivered && !announcement.error) {
-        announcement.error = "ER:LC did not acknowledge command after retry.";
+        announcement.error = `ER:LC did not acknowledge command after ${attempts} attempts.`;
       }
     } else {
       announcement.error = "ER:LC is not connected for this workspace.";

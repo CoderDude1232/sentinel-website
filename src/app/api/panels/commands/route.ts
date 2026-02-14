@@ -409,19 +409,23 @@ export async function POST(request: NextRequest) {
       notes: executionNotes,
     });
     let commandDispatch = await runErlcCommand(erlcKey.serverKey, commandText);
-    let retried = false;
-    if (shouldRetryCommandDispatch(commandDispatch.status, commandDispatch.data)) {
-      retried = true;
-      await wait(5200);
+    let attempts = 1;
+    while (attempts < 3 && shouldRetryCommandDispatch(commandDispatch.status, commandDispatch.data)) {
+      await wait(4200 + attempts * 1600);
+      attempts += 1;
       commandDispatch = await runErlcCommand(erlcKey.serverKey, commandText);
     }
+    const retried = attempts > 1;
 
     if (!commandDispatch.ok) {
-      const reason =
+      let reason =
         inferApiError(commandDispatch.data) ??
         (commandDispatch.status === 422
           ? "ER:LC rejected command syntax or context (for example, invalid target/arguments)."
           : "ER:LC rejected this command.");
+      if (shouldRetryCommandDispatch(commandDispatch.status, commandDispatch.data)) {
+        reason = `ER:LC did not acknowledge the command after ${attempts} attempts.`;
+      }
       const blocked = await createCommandExecution({
         userId: user.id,
         command,
@@ -444,6 +448,7 @@ export async function POST(request: NextRequest) {
           status: commandDispatch.status,
           commandText,
           retried,
+          attempts,
         },
       });
 
@@ -474,6 +479,7 @@ export async function POST(request: NextRequest) {
         status: commandDispatch.status,
         commandText,
         retried,
+        attempts,
       },
     });
 
