@@ -1,16 +1,62 @@
-const departments = [
-  { name: "Law Enforcement", members: 14, lead: "Lt. Hayes", scope: "Full moderation + session host" },
-  { name: "Communications", members: 7, lead: "Sgt. Morrow", scope: "Alert handling + dispatch oversight" },
-  { name: "Training", members: 5, lead: "Officer Lane", scope: "Session planning + attendance control" },
-];
+"use client";
 
-const permissionBands = [
-  { level: "Owner/Admin", rights: "Workspace settings, command policy, retention control" },
-  { level: "Moderator", rights: "Moderation actions, infractions logging, session operations" },
-  { level: "Viewer", rights: "Read-only dashboards and logs" },
-];
+import { FormEvent, useCallback, useEffect, useState } from "react";
+
+type DepartmentsResponse = {
+  departments: Array<{ id: number; name: string; members: number; lead: string; scope: string }>;
+  permissionBands: Array<{ level: string; rights: string }>;
+  error?: string;
+};
 
 export default function DepartmentsPage() {
+  const [data, setData] = useState<DepartmentsResponse>({ departments: [], permissionBands: [] });
+  const [name, setName] = useState("");
+  const [lead, setLead] = useState("");
+  const [members, setMembers] = useState(0);
+  const [scope, setScope] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const load = useCallback(async () => {
+    const response = await fetch("/api/panels/departments", { cache: "no-store" });
+    const payload = (await response.json().catch(() => ({}))) as DepartmentsResponse;
+    if (!response.ok) {
+      throw new Error(payload.error ?? "Failed to load departments");
+    }
+    setData(payload);
+  }, []);
+
+  useEffect(() => {
+    void load().catch((error) => {
+      setMessage(error instanceof Error ? error.message : "Failed to load departments");
+    });
+  }, [load]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/panels/departments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, lead, members, scope }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to create department");
+      }
+      setName("");
+      setScope("");
+      await load();
+      setMessage("Department created.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to create department");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -18,28 +64,59 @@ export default function DepartmentsPage() {
           <span className="kicker">Departments</span>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">Department Management</h1>
         </div>
-        <button className="button-primary px-4 py-2 text-sm">Create department</button>
+        <form onSubmit={handleSubmit} className="flex flex-wrap gap-2">
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+            placeholder="Department name"
+          />
+          <input
+            value={lead}
+            onChange={(event) => setLead(event.target.value)}
+            className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+            placeholder="Lead"
+          />
+          <input
+            type="number"
+            min={0}
+            value={members}
+            onChange={(event) => setMembers(Number(event.target.value))}
+            className="w-20 rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+          />
+          <input
+            value={scope}
+            onChange={(event) => setScope(event.target.value)}
+            className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+            placeholder="Scope"
+          />
+          <button className="button-primary px-4 py-2 text-sm" type="submit" disabled={loading || !name.trim() || !scope.trim()}>
+            {loading ? "Saving..." : "Create department"}
+          </button>
+        </form>
       </div>
+      {message ? <p className="mt-2 text-sm text-[var(--ink-soft)]">{message}</p> : null}
 
       <section className="mt-5 grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
         <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
           <h2 className="text-lg font-semibold tracking-tight">Active departments</h2>
           <div className="mt-3 space-y-2 text-sm">
-            {departments.map((dept) => (
-              <div key={dept.name} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+            {data.departments.map((dept) => (
+              <div key={dept.id.toString()} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                 <p className="font-semibold">{dept.name}</p>
                 <p className="text-[var(--ink-soft)]">Lead: {dept.lead}</p>
                 <p className="text-[var(--ink-soft)]">Members: {dept.members}</p>
                 <p className="text-xs text-[var(--ink-soft)]">Scope: {dept.scope}</p>
               </div>
             ))}
+            {!data.departments.length ? <p className="text-[var(--ink-soft)]">No departments yet.</p> : null}
           </div>
         </article>
 
         <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
           <h2 className="text-lg font-semibold tracking-tight">Permission bands</h2>
           <div className="mt-3 space-y-2 text-sm">
-            {permissionBands.map((item) => (
+            {data.permissionBands.map((item) => (
               <div key={item.level} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                 <p className="font-semibold">{item.level}</p>
                 <p className="text-[var(--ink-soft)]">{item.rights}</p>
