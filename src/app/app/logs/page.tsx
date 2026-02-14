@@ -30,6 +30,11 @@ type AuditResponse = {
 };
 
 export default function LogsPage() {
+  const DISPLAY_LIMITS = {
+    events: 40,
+    prcColumn: 8,
+  } as const;
+
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [prcLogs, setPrcLogs] = useState<NonNullable<AuditResponse["prcLogs"]>>({
     connected: false,
@@ -116,6 +121,11 @@ export default function LogsPage() {
     return `/api/panels/audit?${params.toString()}`;
   }, [moduleFilter, actionFilter, actorFilter]);
 
+  const visibleEvents = useMemo(
+    () => events.slice(0, DISPLAY_LIMITS.events),
+    [events, DISPLAY_LIMITS.events],
+  );
+
   return (
     <div>
       <span className="kicker">Audit</span>
@@ -155,8 +165,13 @@ export default function LogsPage() {
         </CollapsibleSection>
 
         <CollapsibleSection title="Event stream" subtitle="Latest events first" meta={String(events.length)}>
-          <div className="space-y-2 text-sm">
-            {events.map((event) => (
+          {events.length > visibleEvents.length ? (
+            <p className="mb-2 text-xs text-[var(--ink-soft)]">
+              Showing {visibleEvents.length} of {events.length} events.
+            </p>
+          ) : null}
+          <div className="max-h-[780px] space-y-2 overflow-y-auto pr-1 text-sm">
+            {visibleEvents.map((event) => (
               <article key={event.id.toString()} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-semibold">{event.module} · {event.action}</p>
@@ -192,8 +207,13 @@ export default function LogsPage() {
               ].map((column) => (
                 <div key={column.title} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                   <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">{column.title}</p>
-                  <div className="mt-2 space-y-2 text-xs">
-                    {column.items.map((item, index) => (
+                  {column.items.length > DISPLAY_LIMITS.prcColumn ? (
+                    <p className="mt-1 text-[10px] text-[var(--ink-soft)]">
+                      Showing {DISPLAY_LIMITS.prcColumn} of {column.items.length}
+                    </p>
+                  ) : null}
+                  <div className="mt-2 max-h-[320px] space-y-2 overflow-y-auto pr-1 text-xs">
+                    {column.items.slice(0, DISPLAY_LIMITS.prcColumn).map((item, index) => (
                       <div key={`${item.primary}-${index}`} className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-2">
                         <p className="font-semibold text-sm">{item.primary}</p>
                         {item.secondary ? <p className="text-[var(--ink-soft)]">{item.secondary}</p> : null}

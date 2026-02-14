@@ -34,6 +34,9 @@ function formatDuration(seconds: number | null): string {
 }
 
 export default function ActivityPage() {
+  const LEADERBOARD_DISPLAY_LIMIT = 16;
+  const COMMAND_LOG_DISPLAY_LIMIT = 10;
+
   const [data, setData] = useState<ActivityResponse | null>(null);
   const [error, setError] = useState("");
 
@@ -105,7 +108,7 @@ export default function ActivityPage() {
               </tr>
             </thead>
             <tbody>
-              {(data?.leaderboard ?? []).map((member) => (
+              {(data?.leaderboard ?? []).slice(0, LEADERBOARD_DISPLAY_LIMIT).map((member) => (
                 <tr key={member.name} className="border-t border-[var(--line)]">
                   <td className="py-2 pr-4">{member.name}</td>
                   <td className="py-2 pr-4">{member.sessions}</td>
@@ -115,6 +118,11 @@ export default function ActivityPage() {
               ))}
             </tbody>
           </table>
+          {(data?.leaderboard?.length ?? 0) > LEADERBOARD_DISPLAY_LIMIT ? (
+            <p className="pt-2 text-xs text-[var(--ink-soft)]">
+              Showing {LEADERBOARD_DISPLAY_LIMIT} of {data?.leaderboard.length ?? 0} leaderboard entries.
+            </p>
+          ) : null}
           {!data?.leaderboard?.length ? (
             <p className="py-4 text-sm text-[var(--ink-soft)]">No activity entries yet.</p>
           ) : null}
@@ -150,8 +158,13 @@ export default function ActivityPage() {
 
         <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
           <h2 className="text-lg font-semibold tracking-tight">Recent command logs</h2>
-          <div className="mt-3 space-y-2 text-sm">
-            {(data?.prc?.recent.commands ?? []).map((item, index) => (
+          {((data?.prc?.recent.commands.length ?? 0) > COMMAND_LOG_DISPLAY_LIMIT) ? (
+            <p className="mt-1 text-xs text-[var(--ink-soft)]">
+              Showing {COMMAND_LOG_DISPLAY_LIMIT} of {data?.prc?.recent.commands.length ?? 0} command logs.
+            </p>
+          ) : null}
+          <div className="mt-3 max-h-[460px] space-y-2 overflow-y-auto pr-1 text-sm">
+            {(data?.prc?.recent.commands ?? []).slice(0, COMMAND_LOG_DISPLAY_LIMIT).map((item, index) => (
               <div key={`${item.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                 <p className="font-semibold">{item.primary}</p>
                 {item.detail ? <p className="text-[var(--ink-soft)]">{item.detail}</p> : null}

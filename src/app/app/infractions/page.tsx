@@ -56,6 +56,9 @@ const defaultPolicy: InfractionPolicy = {
 };
 
 export default function InfractionsPage() {
+  const PRC_BANS_DISPLAY_LIMIT = 12;
+  const CASE_DISPLAY_LIMIT = 20;
+
   const [data, setData] = useState<InfractionData>({
     stats: [],
     cases: [],
@@ -324,8 +327,14 @@ export default function InfractionsPage() {
           {!data.prc?.connected ? (
             <p className="text-sm text-[var(--ink-soft)]">Connect ER:LC to sync live ban records.</p>
           ) : (
-            <div className="space-y-2 text-sm">
-              {data.prc.bans.map((item, index) => (
+            <>
+              {data.prc.bans.length > PRC_BANS_DISPLAY_LIMIT ? (
+                <p className="mb-2 text-xs text-[var(--ink-soft)]">
+                  Showing {PRC_BANS_DISPLAY_LIMIT} of {data.prc.bans.length} bans.
+                </p>
+              ) : null}
+            <div className="max-h-[460px] space-y-2 overflow-y-auto pr-1 text-sm">
+              {data.prc.bans.slice(0, PRC_BANS_DISPLAY_LIMIT).map((item, index) => (
                 <div key={`${item.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                   <p className="font-semibold">{item.primary}</p>
                   {item.detail ? <p className="text-[var(--ink-soft)]">{item.detail}</p> : null}
@@ -334,6 +343,7 @@ export default function InfractionsPage() {
               ))}
               {!data.prc.bans.length ? <p className="text-[var(--ink-soft)]">No active bans returned by PRC.</p> : null}
             </div>
+            </>
           )}
         </CollapsibleSection>
 
@@ -413,8 +423,13 @@ export default function InfractionsPage() {
           subtitle="Latest disciplinary events in your workspace."
           meta={String(data.cases.length)}
         >
-          <div className="space-y-2 text-sm">
-            {data.cases.map((item) => (
+          {data.cases.length > CASE_DISPLAY_LIMIT ? (
+            <p className="mb-2 text-xs text-[var(--ink-soft)]">
+              Showing {CASE_DISPLAY_LIMIT} of {data.cases.length} cases.
+            </p>
+          ) : null}
+          <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1 text-sm">
+            {data.cases.slice(0, CASE_DISPLAY_LIMIT).map((item) => (
               <div
                 key={item.id.toString()}
                 className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2"

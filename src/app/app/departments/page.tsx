@@ -15,6 +15,9 @@ type DepartmentsResponse = {
 };
 
 export default function DepartmentsPage() {
+  const DEPARTMENTS_DISPLAY_LIMIT = 16;
+  const STAFF_DISPLAY_LIMIT = 24;
+
   const [data, setData] = useState<DepartmentsResponse>({ departments: [], permissionBands: [] });
   const [name, setName] = useState("");
   const [lead, setLead] = useState("");
@@ -106,8 +109,13 @@ export default function DepartmentsPage() {
       <section className="mt-5 grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
         <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
           <h2 className="text-lg font-semibold tracking-tight">Active departments</h2>
-          <div className="mt-3 space-y-2 text-sm">
-            {data.departments.map((dept) => (
+          {data.departments.length > DEPARTMENTS_DISPLAY_LIMIT ? (
+            <p className="mt-1 text-xs text-[var(--ink-soft)]">
+              Showing {DEPARTMENTS_DISPLAY_LIMIT} of {data.departments.length} departments.
+            </p>
+          ) : null}
+          <div className="mt-3 max-h-[560px] space-y-2 overflow-y-auto pr-1 text-sm">
+            {data.departments.slice(0, DEPARTMENTS_DISPLAY_LIMIT).map((dept) => (
               <div key={dept.id.toString()} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                 <p className="font-semibold">{dept.name}</p>
                 <p className="text-[var(--ink-soft)]">Lead: {dept.lead}</p>
@@ -137,8 +145,15 @@ export default function DepartmentsPage() {
         {!data.prc?.connected ? (
           <p className="mt-2 text-sm text-[var(--ink-soft)]">Connect ER:LC to map live staff by rank/permission.</p>
         ) : (
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {data.prc.staff.map((entry, index) => (
+          <>
+          {data.prc.staff.length > STAFF_DISPLAY_LIMIT ? (
+            <p className="mt-1 text-xs text-[var(--ink-soft)]">
+              Showing {STAFF_DISPLAY_LIMIT} of {data.prc.staff.length} staff entries.
+            </p>
+          ) : null}
+          <div className="mt-3 max-h-[560px] overflow-y-auto pr-1">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {data.prc.staff.slice(0, STAFF_DISPLAY_LIMIT).map((entry, index) => (
               <div key={`${entry.name}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
                 <p className="font-semibold">{entry.name}</p>
                 <p className="text-[var(--ink-soft)]">{entry.role ?? "Role unknown"}</p>
@@ -146,6 +161,8 @@ export default function DepartmentsPage() {
             ))}
             {!data.prc.staff.length ? <p className="text-sm text-[var(--ink-soft)]">No staff entries returned by PRC.</p> : null}
           </div>
+          </div>
+          </>
         )}
       </section>
     </div>

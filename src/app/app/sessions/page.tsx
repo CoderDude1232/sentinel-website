@@ -40,6 +40,8 @@ const defaultAutomation: SessionAutomation = {
   autoEndWhenEmpty: false,
 };
 
+const UPCOMING_DISPLAY_LIMIT = 16;
+
 export default function SessionsPage() {
   const [data, setData] = useState<SessionsResponse>({
     upcoming: [],
@@ -295,8 +297,13 @@ export default function SessionsPage() {
         </CollapsibleSection>
 
         <CollapsibleSection title="Upcoming schedule" subtitle="Planned sessions and staffing targets." meta={String(data.upcoming.length)}>
-          <div className="space-y-2 text-sm">
-            {data.upcoming.map((session) => (
+          {data.upcoming.length > UPCOMING_DISPLAY_LIMIT ? (
+            <p className="mb-2 text-xs text-[var(--ink-soft)]">
+              Showing {UPCOMING_DISPLAY_LIMIT} of {data.upcoming.length} sessions.
+            </p>
+          ) : null}
+          <div className="max-h-[560px] space-y-2 overflow-y-auto pr-1 text-sm">
+            {data.upcoming.slice(0, UPCOMING_DISPLAY_LIMIT).map((session) => (
               <div
                 key={session.id.toString()}
                 className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2"

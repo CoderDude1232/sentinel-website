@@ -53,6 +53,9 @@ const statusOptions: Array<{ value: string; label: string }> = [
   { value: "Resolved", label: "Resolved" },
 ];
 
+const MOD_CALL_DISPLAY_LIMIT = 12;
+const CASE_DISPLAY_LIMIT = 20;
+
 export default function ModerationPage() {
   const [cases, setCases] = useState<ModerationCase[]>([]);
   const [type, setType] = useState("Mod Call");
@@ -211,8 +214,14 @@ export default function ModerationPage() {
           {!prc.connected ? (
             <p className="text-sm text-[var(--ink-soft)]">Connect ER:LC to view live mod calls.</p>
           ) : (
-            <div className="space-y-2 text-sm">
-              {prc.modCalls.map((call, index) => (
+            <>
+              {prc.modCalls.length > MOD_CALL_DISPLAY_LIMIT ? (
+                <p className="mb-2 text-xs text-[var(--ink-soft)]">
+                  Showing {MOD_CALL_DISPLAY_LIMIT} of {prc.modCalls.length} mod calls.
+                </p>
+              ) : null}
+            <div className="max-h-[460px] space-y-2 overflow-y-auto pr-1 text-sm">
+              {prc.modCalls.slice(0, MOD_CALL_DISPLAY_LIMIT).map((call, index) => (
                 <div key={`${call.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                   <p className="font-semibold">{call.primary}</p>
                   {call.secondary ? <p className="text-[var(--ink-soft)]">Target: {call.secondary}</p> : null}
@@ -222,6 +231,7 @@ export default function ModerationPage() {
               ))}
               {!prc.modCalls.length ? <p className="text-[var(--ink-soft)]">No active mod calls right now.</p> : null}
             </div>
+            </>
           )}
         </CollapsibleSection>
 
@@ -230,8 +240,13 @@ export default function ModerationPage() {
           subtitle="Review active cases and resolve when complete."
           meta={`${openCount} open`}
         >
-          <div className="space-y-2 text-sm">
-            {cases.map((item) => (
+          {cases.length > CASE_DISPLAY_LIMIT ? (
+            <p className="mb-2 text-xs text-[var(--ink-soft)]">
+              Showing {CASE_DISPLAY_LIMIT} of {cases.length} cases.
+            </p>
+          ) : null}
+          <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1 text-sm">
+            {cases.slice(0, CASE_DISPLAY_LIMIT).map((item) => (
               <div
                 key={item.id.toString()}
                 className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2"

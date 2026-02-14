@@ -83,6 +83,11 @@ export default function AlertsPage() {
     }
   }
 
+  const visibleFeed = data.feed.slice(0, 18);
+  const visibleWebhookStatus = data.webhookStatus.slice(0, 6);
+  const visibleModCalls = data.prcSignals?.modCalls.slice(0, 8) ?? [];
+  const visibleBans = data.prcSignals?.bans.slice(0, 8) ?? [];
+
   return (
     <div>
       <span className="kicker">Alerts</span>
@@ -92,8 +97,13 @@ export default function AlertsPage() {
       <section className="mt-5 grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
         <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
           <h2 className="text-lg font-semibold tracking-tight">Live alert feed</h2>
-          <div className="mt-3 space-y-2 text-sm">
-            {data.feed.map((item) => (
+          {data.feed.length > visibleFeed.length ? (
+            <p className="mt-1 text-xs text-[var(--ink-soft)]">
+              Showing {visibleFeed.length} of {data.feed.length} alerts.
+            </p>
+          ) : null}
+          <div className="mt-3 max-h-[640px] space-y-2 overflow-y-auto pr-1 text-sm">
+            {visibleFeed.map((item) => (
               <div key={item.id.toString()} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-semibold">{item.event}</p>
@@ -112,13 +122,18 @@ export default function AlertsPage() {
         <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
           <h2 className="text-lg font-semibold tracking-tight">Webhook health</h2>
           <div className="mt-3 space-y-2 text-sm">
-            {data.webhookStatus.map((item) => (
+            {visibleWebhookStatus.map((item) => (
               <div key={item.name} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                 <p className="font-semibold">{item.name}</p>
                 <p className="text-[var(--ink-soft)]">Status: {item.status}</p>
                 <p className="text-xs text-[var(--ink-soft)]">Recent retries: {item.retries}</p>
               </div>
             ))}
+            {data.webhookStatus.length > visibleWebhookStatus.length ? (
+              <p className="text-xs text-[var(--ink-soft)]">
+                Showing {visibleWebhookStatus.length} of {data.webhookStatus.length} webhook entries.
+              </p>
+            ) : null}
           </div>
           <button
             onClick={() => void sendTestAlert()}
@@ -141,24 +156,34 @@ export default function AlertsPage() {
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
                 Open mod calls ({data.prcSignals.activeModCalls})
               </p>
-              {data.prcSignals.modCalls.map((entry, index) => (
+              {visibleModCalls.map((entry, index) => (
                 <div key={`${entry.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
                   <p className="font-semibold">{entry.primary}</p>
                   {entry.detail ? <p className="text-[var(--ink-soft)]">{entry.detail}</p> : null}
                 </div>
               ))}
+              {data.prcSignals.modCalls.length > visibleModCalls.length ? (
+                <p className="text-xs text-[var(--ink-soft)]">
+                  Showing {visibleModCalls.length} of {data.prcSignals.modCalls.length} mod calls.
+                </p>
+              ) : null}
               {!data.prcSignals.modCalls.length ? <p className="text-sm text-[var(--ink-soft)]">No open mod calls.</p> : null}
             </div>
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
                 Active bans ({data.prcSignals.activeBans})
               </p>
-              {data.prcSignals.bans.map((entry, index) => (
+              {visibleBans.map((entry, index) => (
                 <div key={`${entry.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
                   <p className="font-semibold">{entry.primary}</p>
                   {entry.detail ? <p className="text-[var(--ink-soft)]">{entry.detail}</p> : null}
                 </div>
               ))}
+              {data.prcSignals.bans.length > visibleBans.length ? (
+                <p className="text-xs text-[var(--ink-soft)]">
+                  Showing {visibleBans.length} of {data.prcSignals.bans.length} bans.
+                </p>
+              ) : null}
               {!data.prcSignals.bans.length ? <p className="text-sm text-[var(--ink-soft)]">No active bans.</p> : null}
             </div>
           </div>

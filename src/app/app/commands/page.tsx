@@ -42,6 +42,8 @@ const defaultPolicy: CommandPolicy = {
   cooldownSeconds: 15,
 };
 
+const EXECUTION_DISPLAY_LIMIT = 24;
+
 export default function CommandsPage() {
   const [policy, setPolicy] = useState<CommandPolicy>(defaultPolicy);
   const [executions, setExecutions] = useState<CommandExecutionRecord[]>([]);
@@ -74,6 +76,11 @@ export default function CommandsPage() {
       })),
     ],
     [onlinePlayers],
+  );
+
+  const visibleExecutions = useMemo(
+    () => executions.slice(0, EXECUTION_DISPLAY_LIMIT),
+    [executions],
   );
 
   const load = useCallback(async () => {
@@ -320,8 +327,13 @@ export default function CommandsPage() {
           subtitle="Recent submissions with policy outcome and actor trace."
           meta={String(executions.length)}
         >
-          <div className="space-y-2 text-sm">
-            {executions.map((entry) => (
+          {executions.length > visibleExecutions.length ? (
+            <p className="mb-2 text-xs text-[var(--ink-soft)]">
+              Showing {visibleExecutions.length} of {executions.length} submissions.
+            </p>
+          ) : null}
+          <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1 text-sm">
+            {visibleExecutions.map((entry) => (
               <div key={entry.id.toString()} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-semibold">{entry.command} ? {entry.targetPlayer === "GLOBAL" ? "Global" : entry.targetPlayer}</p>
