@@ -39,42 +39,55 @@ const featureSections = [
   },
 ];
 
+const highlights = [
+  { label: "Core Modules", value: "6" },
+  { label: "Live Panels", value: "Real-time" },
+  { label: "Team Modes", value: "Solo + Team" },
+  { label: "Auth", value: "Discord" },
+];
+
 export default function FeaturesPage() {
   return (
     <main className="mx-auto w-full max-w-7xl px-5 sm:px-8">
-      <section className="feature-hero mt-8">
-        <div className="feature-hero-grid">
+      <section className="features-shell mt-8">
+        <div className="features-grid">
           <div className="stagger-rise">
-            <span className="kicker">Feature Architecture</span>
+            <span className="kicker">Feature Suite</span>
             <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-              Six modules. One command platform.
+              Command tooling designed for ER:LC teams.
             </h1>
             <p className="mt-4 max-w-2xl text-sm text-[var(--ink-soft)] sm:text-base">
-              Sentinel combines moderation, staffing, infractions, sessions, departments, and
-              ER:LC connectivity into a single operational stack for your community.
+              Every Sentinel module is built for fast operational decisions: moderation,
+              staffing insight, infraction workflows, session control, and direct ER:LC data.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="/login" className="button-primary px-6 py-3 text-base">
-                Start with Discord
+                Sign In with Discord
               </Link>
               <Link href="/app/onboarding" className="button-secondary px-6 py-3 text-base">
-                Setup Server
+                Connect ER:LC Server
               </Link>
             </div>
           </div>
-          <div className="feature-points stagger-rise delay-1">
-            {featureSections.map((feature) => (
-              <div key={`${feature.title}-hero`} className="feature-pill">
-                {feature.title}
-              </div>
+          <div className="features-highlights stagger-rise delay-1">
+            {highlights.map((item) => (
+              <article key={item.label} className="feature-highlight-card">
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+                  {item.label}
+                </p>
+                <p className="mt-2 text-xl font-semibold tracking-tight">{item.value}</p>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto mb-4 mt-6 grid w-full max-w-6xl gap-4 sm:grid-cols-2">
-        {featureSections.map((feature) => (
-          <article key={feature.title} className="glass-card p-5">
+      <section className="mx-auto mb-4 mt-6 grid w-full max-w-6xl gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {featureSections.map((feature, index) => (
+          <article key={feature.title} className="feature-module-card p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
+              Module {String(index + 1).padStart(2, "0")}
+            </p>
             <h2 className="text-xl font-semibold tracking-tight">{feature.title}</h2>
             <p className="mt-2 text-sm text-[var(--ink-soft)]">{feature.description}</p>
             <ul className="mt-4 space-y-1.5 text-sm text-[var(--ink-soft)]">
@@ -87,7 +100,7 @@ export default function FeaturesPage() {
       </section>
 
       <section className="mx-auto mb-16 mt-5 grid w-full max-w-6xl gap-4 md:grid-cols-2">
-        <article className="glass-card p-5">
+        <article className="feature-module-card p-5">
           <h3 className="text-sm uppercase tracking-[0.12em] text-[var(--ink-soft)]">
             Designed for control
           </h3>
@@ -96,16 +109,16 @@ export default function FeaturesPage() {
             and operational clarity under load.
           </p>
         </article>
-        <article className="glass-card flex flex-wrap items-center justify-between gap-3 p-5">
+        <article className="feature-module-card flex flex-wrap items-center justify-between gap-3 p-5">
           <p className="text-sm text-[var(--ink-soft)]">
-            Ready to move from overview to workspace setup?
+            Ready to configure your first workspace and connect ER:LC?
           </p>
           <div className="flex gap-2">
             <Link href="/login" className="button-primary px-3 py-2 text-sm">
               Open Sentinel
             </Link>
-            <Link href="/docs" className="button-secondary px-3 py-2 text-sm">
-              Read docs
+            <Link href="/app/onboarding" className="button-secondary px-3 py-2 text-sm">
+              Setup server
             </Link>
           </div>
         </article>

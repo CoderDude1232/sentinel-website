@@ -26,6 +26,9 @@ export async function GlobalNavbar() {
         </div>
 
         <nav className="flex items-center gap-4 text-base">
+          <Link href="/features" className="nav-quiet-link">
+            Features
+          </Link>
           <Link href="/app" className="nav-quiet-link">
             Workspace
           </Link>
