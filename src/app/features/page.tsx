@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PublicHero } from "@/components/public-hero";
 
 const featureSections = [
   {
@@ -42,14 +41,34 @@ const featureSections = [
 
 export default function FeaturesPage() {
   return (
-    <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
-      <PublicHero
-        kicker="Product Capabilities"
-        title="Core features built for ER:LC operations."
-        description="Sentinel is structured around six operational modules used by active communities to run moderation, staffing, and session workflows with consistent accountability."
-      />
+    <main className="mx-auto w-full max-w-7xl px-5 sm:px-8">
+      <section className="hero-shell min-h-[62vh]">
+        <div className="mx-auto w-full max-w-5xl text-center">
+          <p className="hero-subtle stagger-rise">Product capabilities for ER:LC operations</p>
+          <h1 className="public-hero-title stagger-rise delay-1 mt-4">
+            Core features built for active command teams.
+          </h1>
+          <p className="hero-subtle stagger-rise delay-2 mx-auto mt-6 max-w-3xl">
+            Sentinel is structured around six operational modules used by
+            communities to run moderation, staffing, and session workflows with
+            consistent accountability.
+          </p>
 
-      <section className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="stagger-rise delay-3 mt-9 flex flex-wrap items-center justify-center gap-3.5">
+            <Link href="/app" className="button-primary px-6 py-3 text-base">
+              Launch Dashboard
+            </Link>
+            <Link href="/app/onboarding" className="button-secondary px-6 py-3 text-base">
+              Connect ER:LC Server
+            </Link>
+            <Link href="/login" className="button-secondary px-6 py-3 text-base">
+              Sign In with Discord
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto mb-4 mt-2 grid w-full max-w-6xl gap-4 sm:grid-cols-2">
         {featureSections.map((feature) => (
           <article key={feature.title} className="glass-card p-5">
             <h2 className="text-xl font-semibold tracking-tight">{feature.title}</h2>
@@ -63,7 +82,7 @@ export default function FeaturesPage() {
         ))}
       </section>
 
-      <section className="mt-5 grid gap-4 md:grid-cols-2">
+      <section className="mx-auto mb-16 mt-5 grid w-full max-w-6xl gap-4 md:grid-cols-2">
         <article className="glass-card p-5">
           <h3 className="text-sm uppercase tracking-[0.12em] text-[var(--ink-soft)]">
             Designed for control
