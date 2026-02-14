@@ -18,9 +18,27 @@ export async function POST(request: NextRequest) {
     await ensureWorkspaceSeed(user);
     const integration = await getDiscordBotIntegration(user.id);
 
-    if (!integration.enabled || !integration.guildId || !integration.alertsChannelId) {
+    const missing: string[] = [];
+    if (!integration.enabled) {
+      missing.push("enable bot delivery");
+    }
+    if (!integration.guildId) {
+      missing.push("select a Discord server");
+    }
+    if (!integration.alertsChannelId) {
+      missing.push("select an alerts channel");
+    }
+
+    if (missing.length) {
       return NextResponse.json(
-        { error: "Discord bot integration is not fully configured." },
+        {
+          error: `Discord bot integration is incomplete: ${missing.join(", ")}.`,
+          integrationState: {
+            enabled: integration.enabled,
+            hasGuild: Boolean(integration.guildId),
+            hasAlertsChannel: Boolean(integration.alertsChannelId),
+          },
+        },
         { status: 400 },
       );
     }
@@ -32,8 +50,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const alertsChannelId = integration.alertsChannelId;
+    if (!alertsChannelId) {
+      return NextResponse.json(
+        { error: "No alerts channel configured for bot integration." },
+        { status: 400 },
+      );
+    }
+
     const delivered = await sendDiscordBotMessage(
-      integration.alertsChannelId,
+      alertsChannelId,
       `Sentinel test alert for **${integration.guildName ?? "selected guild"}**.`,
     );
 

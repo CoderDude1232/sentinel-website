@@ -47,6 +47,7 @@ export function DiscordBotPanel() {
   const [status, setStatus] = useState<StatusState>({ kind: "idle", message: "" });
 
   const selectedGuild = useMemo(() => guilds.find((guild) => guild.id === guildId) ?? null, [guilds, guildId]);
+  const readyForTest = enabled && Boolean(guildId) && Boolean(alertsChannelId);
 
   const loadBase = useCallback(async () => {
     const response = await fetch("/api/integrations/discord-bot", { cache: "no-store" });
@@ -182,9 +183,27 @@ export function DiscordBotPanel() {
         error?: string;
         delivered?: boolean;
         status?: number;
+        integrationState?: {
+          enabled?: boolean;
+          hasGuild?: boolean;
+          hasAlertsChannel?: boolean;
+        };
       };
       if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to send bot test message.");
+        const missing = payload.integrationState
+          ? [
+              payload.integrationState.enabled ? null : "enable bot delivery",
+              payload.integrationState.hasGuild ? null : "select a server",
+              payload.integrationState.hasAlertsChannel ? null : "select an alerts channel",
+            ]
+              .filter((item): item is string => Boolean(item))
+              .join(", ")
+          : "";
+        throw new Error(
+          missing
+            ? `${payload.error ?? "Failed to send bot test message."} Missing: ${missing}.`
+            : payload.error ?? "Failed to send bot test message.",
+        );
       }
       setStatus({
         kind: payload.delivered ? "success" : "error",
@@ -231,6 +250,12 @@ export function DiscordBotPanel() {
         </p>
         <p className="mt-1 text-[var(--ink-soft)]">
           Last updated: <span className="text-[var(--ink-strong)]">{formatTimestamp(lastUpdated)}</span>
+        </p>
+        <p className="mt-1 text-[var(--ink-soft)]">
+          Test readiness:{" "}
+          <span className="text-[var(--ink-strong)]">
+            {readyForTest ? "Ready" : "Incomplete (enable + server + channel + save)"}
+          </span>
         </p>
       </div>
 
