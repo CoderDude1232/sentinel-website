@@ -55,7 +55,16 @@ const statusOptions: Array<{ value: string; label: string }> = [
 
 const MOD_CALL_DISPLAY_LIMIT = 12;
 const CASE_DISPLAY_LIMIT = 20;
-const QUICK_ACTION_COMMANDS = [":warn", ":kick", ":ban", ":tban", ":pm", ":unban"];
+const QUICK_ACTIONS: Array<{ command: string; label: string }> = [
+  { command: ":warn", label: "Warn" },
+  { command: ":kick", label: "Kick" },
+  { command: ":ban", label: "Ban" },
+  { command: ":tban", label: "Temp Ban" },
+  { command: ":pm", label: "PM" },
+  { command: ":unban", label: "Unban" },
+];
+
+type CommandExecutionState = "Queued" | "Executed" | "Blocked";
 
 export default function ModerationPage() {
   const [cases, setCases] = useState<ModerationCase[]>([]);
@@ -171,11 +180,21 @@ export default function ModerationPage() {
           notes: (reason ?? quickReason).trim(),
         }),
       });
-      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        execution?: { result?: CommandExecutionState };
+      };
       if (!response.ok) {
         throw new Error(payload.error ?? `Failed to run ${command}`);
       }
-      setMessage(`Quick action submitted: ${command} ${resolvedTarget}.`);
+      const result = payload.execution?.result ?? "Queued";
+      if (result === "Executed") {
+        setMessage(`Quick action executed in ER:LC: ${command} ${resolvedTarget}.`);
+      } else if (result === "Queued") {
+        setMessage(`Quick action queued by command policy: ${command} ${resolvedTarget}.`);
+      } else {
+        setMessage(`Quick action was blocked: ${command} ${resolvedTarget}.`);
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : `Failed to run ${command}`);
     } finally {
@@ -209,21 +228,21 @@ export default function ModerationPage() {
     }
   }
 
-  async function moveToResolved(id: number) {
+  async function setCaseStatus(id: number, nextStatus: "Resolved" | "Investigating") {
     setLoading(true);
     setMessage("");
     try {
       const response = await fetch("/api/panels/moderation", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: "Resolved", owner: owner || "System" }),
+        body: JSON.stringify({ id, status: nextStatus, owner: owner || "System" }),
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to update case");
       }
       await loadCases();
-      setMessage("Case marked as resolved.");
+      setMessage(nextStatus === "Resolved" ? "Case marked as resolved." : "Case reopened.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to update case");
     } finally {
@@ -324,60 +343,44 @@ export default function ModerationPage() {
                 </div>
                 <p className="text-[var(--ink-soft)]">{item.type} - {item.player}</p>
                 <p className="text-xs text-[var(--ink-soft)]">Owner: {item.owner}</p>
-                {!["resolved", "closed"].includes(item.status.toLowerCase()) ? (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {QUICK_ACTIONS.map((action) => (
+                    <button
+                      key={`${item.id}-${action.command}`}
+                      type="button"
+                      className="button-secondary px-2 py-1 text-xs"
+                      disabled={quickLoading}
+                      onClick={() =>
+                        void runQuickAction(
+                          action.command,
+                          item.player,
+                          `${item.caseRef}: ${item.type}`,
+                        )
+                      }
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                  {!["resolved", "closed"].includes(item.status.toLowerCase()) ? (
                     <button
                       type="button"
-                      onClick={() => void moveToResolved(item.id)}
+                      onClick={() => void setCaseStatus(item.id, "Resolved")}
                       className="button-secondary px-3 py-1 text-xs"
                       disabled={loading}
                     >
-                      Mark resolved
+                      Resolve Case
                     </button>
+                  ) : (
                     <button
                       type="button"
-                      className="button-secondary px-2 py-1 text-xs"
-                      disabled={quickLoading}
-                      onClick={() =>
-                        void runQuickAction(
-                          ":warn",
-                          item.player,
-                          `${item.caseRef}: ${item.type}`,
-                        )
-                      }
+                      onClick={() => void setCaseStatus(item.id, "Investigating")}
+                      className="button-secondary px-3 py-1 text-xs"
+                      disabled={loading}
                     >
-                      Warn
+                      Reopen Case
                     </button>
-                    <button
-                      type="button"
-                      className="button-secondary px-2 py-1 text-xs"
-                      disabled={quickLoading}
-                      onClick={() =>
-                        void runQuickAction(
-                          ":kick",
-                          item.player,
-                          `${item.caseRef}: ${item.type}`,
-                        )
-                      }
-                    >
-                      Kick
-                    </button>
-                    <button
-                      type="button"
-                      className="button-secondary px-2 py-1 text-xs"
-                      disabled={quickLoading}
-                      onClick={() =>
-                        void runQuickAction(
-                          ":ban",
-                          item.player,
-                          `${item.caseRef}: ${item.type}`,
-                        )
-                      }
-                    >
-                      Ban
-                    </button>
+                  )}
                   </div>
-                ) : null}
               </div>
             ))}
             {!cases.length ? <p className="text-[var(--ink-soft)]">No moderation cases yet.</p> : null}
@@ -445,15 +448,15 @@ export default function ModerationPage() {
                 placeholder="Action reason/message (for warn, kick, ban, tban, pm)"
               />
               <div className="flex flex-wrap gap-1.5">
-                {QUICK_ACTION_COMMANDS.map((command) => (
+                {QUICK_ACTIONS.map((action) => (
                   <button
-                    key={command}
+                    key={action.command}
                     type="button"
                     className="button-secondary px-2 py-1 text-xs"
                     disabled={quickLoading || !resolvedPlayer}
-                    onClick={() => void runQuickAction(command, resolvedPlayer)}
+                    onClick={() => void runQuickAction(action.command, resolvedPlayer)}
                   >
-                    {command}
+                    {action.label}
                   </button>
                 ))}
               </div>
