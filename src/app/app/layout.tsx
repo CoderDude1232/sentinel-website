@@ -19,38 +19,27 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen">
       <div className="mx-auto w-full max-w-7xl px-5 py-6 sm:px-8">
-        <section className="dashboard-hero mb-5">
+        <header className="dashboard-topbar mb-5">
           <div>
-            <span className="kicker">Workspace</span>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Sentinel Command Console
-            </h1>
-            <p className="hero-subtle mt-3 max-w-3xl text-sm sm:text-base">
-              Monitor ER:LC moderation, staff activity, and operational workflows from one unified dashboard.
-            </p>
+            <p className="text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">Workspace</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Sentinel Command Console</h1>
           </div>
-          <div className="mt-5 flex flex-wrap gap-2.5">
-            <Link href="/app/onboarding" className="button-primary px-4 py-2 text-sm">
-              Connect Server
-            </Link>
-            <Link href="/app/alerts" className="button-secondary px-4 py-2 text-sm">
-              View Alerts
-            </Link>
-            <Link href="/app/integrations" className="button-secondary px-4 py-2 text-sm">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <Link href="/app/integrations" className="nav-quiet-link">
               Integrations
             </Link>
+            <Link href="/app/alerts" className="nav-quiet-link">
+              Alerts
+            </Link>
+            <Link href="/app/settings" className="nav-quiet-link">
+              Settings
+            </Link>
           </div>
-        </section>
+        </header>
       </div>
 
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-5 px-5 pb-6 sm:px-8 md:grid-cols-[240px_1fr]">
         <aside className="glass-card h-fit p-4 md:sticky md:top-4">
-          <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.04)] px-3 py-2">
-            <p className="text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">
-              Ops Console
-            </p>
-            <p className="mt-1 text-sm font-semibold">Primary workspace</p>
-          </div>
           <DashboardNav />
         </aside>
         <section className="dashboard-content p-5 sm:p-6">

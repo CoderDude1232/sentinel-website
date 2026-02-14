@@ -513,25 +513,39 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
+.dashboard-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.95rem 1rem;
+  background:
+    radial-gradient(circle at 8% 8%, rgba(216, 29, 56, 0.1), transparent 32%),
+    linear-gradient(160deg, rgba(16, 16, 21, 0.86), rgba(9, 9, 12, 0.9));
+}
+
 .dashboard-content {
   border: 1px solid var(--line);
   border-radius: 16px;
   background:
-    linear-gradient(165deg, rgba(17, 17, 22, 0.9), rgba(10, 10, 13, 0.92));
+    linear-gradient(165deg, rgba(15, 15, 20, 0.86), rgba(10, 10, 13, 0.9));
   box-shadow:
-    0 28px 44px -30px var(--shadow),
+    0 20px 32px -28px var(--shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .dashboard-card {
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .dashboard-nav-link {
-  border-radius: 0.6rem;
-  padding: 0.46rem 0.58rem;
+  border-radius: 0.5rem;
+  padding: 0.42rem 0.52rem;
   color: var(--ink-soft);
   transition: color 130ms ease, background-color 130ms ease, border-color 130ms ease;
   border: 1px solid transparent;
@@ -544,9 +558,27 @@ body {
 }
 
 .dashboard-nav-link.active {
-  background: linear-gradient(120deg, rgba(216, 29, 56, 0.2), rgba(126, 14, 31, 0.16));
+  background: linear-gradient(120deg, rgba(216, 29, 56, 0.16), rgba(126, 14, 31, 0.12));
   color: var(--ink-strong);
-  border-color: rgba(216, 29, 56, 0.36);
+  border-color: rgba(216, 29, 56, 0.28);
+}
+
+.dashboard-quiet-action {
+  display: block;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--ink-strong);
+  padding: 0.5rem 0.62rem;
+  font-size: 0.9rem;
+  transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+}
+
+.dashboard-quiet-action:hover {
+  border-color: rgba(216, 29, 56, 0.26);
+  background: rgba(216, 29, 56, 0.09);
+  transform: translateY(-1px);
 }
 
 @media (min-width: 900px) {

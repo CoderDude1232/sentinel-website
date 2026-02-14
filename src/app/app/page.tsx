@@ -48,19 +48,16 @@ export default function AppOverviewPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <span className="kicker">Workspace Command View</span>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Dashboard Overview</h1>
+          <span className="kicker">Overview</span>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Operations Snapshot</h1>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
-            Live status, active workloads, and team operations in one surface.
+            High-signal metrics and recent events.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => void loadSummary()} className="button-primary px-4 py-2 text-sm" type="button">
+          <button onClick={() => void loadSummary()} className="button-secondary px-4 py-2 text-sm" type="button">
             Refresh data
           </button>
-          <Link href="/app/onboarding" className="button-secondary px-4 py-2 text-sm">
-            Onboarding
-          </Link>
         </div>
       </div>
 
@@ -70,7 +67,7 @@ export default function AppOverviewPage() {
         </p>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {(loading ? [{ title: "Loading...", value: "--", details: "Fetching dashboard data" }] : summary.cards).map((card) => (
           <article key={card.title} className="dashboard-card p-4">
             <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">{card.title}</p>
@@ -80,11 +77,11 @@ export default function AppOverviewPage() {
         ))}
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+      <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
         <article className="dashboard-card p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">Live activity feed</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">Recent activity</h2>
           <div className="mt-3 space-y-2.5">
-            {(summary.feed.length ? summary.feed : [{ time: "now", label: "No alerts yet", level: "Info" }]).map((item) => (
+            {(summary.feed.length ? summary.feed : [{ time: "-", label: "No alerts yet", level: "Info" }]).slice(0, 6).map((item) => (
               <div key={item.time + item.label} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-3 py-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm text-[var(--ink-strong)]">{item.label}</p>
@@ -97,20 +94,17 @@ export default function AppOverviewPage() {
         </article>
 
         <article className="dashboard-card p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">Next actions</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">Quick actions</h2>
           <div className="mt-3 flex flex-col gap-2">
             {(summary.nextActions.length
               ? summary.nextActions
               : [{ label: "Open moderation panel", href: "/app/moderation" }]
-            ).map((action) => (
-              <Link key={action.href} href={action.href} className="button-secondary w-full px-3 py-2 text-sm">
+            ).slice(0, 5).map((action) => (
+              <Link key={action.href} href={action.href} className="dashboard-quiet-action">
                 {action.label}
               </Link>
             ))}
           </div>
-          <p className="mt-3 text-xs text-[var(--ink-soft)]">
-            Use modules for full detail. This overview stays focused on high-level control.
-          </p>
         </article>
       </section>
     </div>
