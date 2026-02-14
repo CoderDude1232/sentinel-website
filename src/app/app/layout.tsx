@@ -1,11 +1,21 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard-nav";
+import { parseSessionToken, SESSION_COOKIE_NAME } from "@/lib/session";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const session = parseSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
+
+  if (!session) {
+    redirect("/login");
+  }
+
   return (
     <div className="min-h-screen">
       <div className="mx-auto w-full max-w-7xl px-5 py-6 sm:px-8">
