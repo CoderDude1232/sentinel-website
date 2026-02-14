@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
-import { fetchErlcServerSnapshot } from "@/lib/erlc-api";
+import { fetchErlcServerSnapshot, runErlcCommand } from "@/lib/erlc-api";
 import { getUserErlcKey } from "@/lib/erlc-store";
 import {
   createAuditEvent,
@@ -73,6 +73,20 @@ function renderAnnouncementTemplate(
     .replaceAll("{playerCount}", values.playerCount === null ? "N/A" : String(values.playerCount))
     .replaceAll("{queueCount}", values.queueCount === null ? "N/A" : String(values.queueCount))
     .replaceAll("{serverName}", values.serverName ?? "Unknown");
+}
+
+function inferApiError(payload: unknown): string | null {
+  if (typeof payload === "string") {
+    const text = payload.trim();
+    return text || null;
+  }
+  const record = asObject(payload);
+  return (
+    asString(record?.error) ??
+    asString(record?.message) ??
+    asString(record?.Error) ??
+    asString(record?.Message)
+  );
 }
 
 export async function GET(request: NextRequest) {
@@ -175,6 +189,15 @@ export async function POST(request: NextRequest) {
       queueCount: live.queueCount,
       serverName: live.serverName,
     });
+    const announceCommand = `:h ${announcementText}`;
+
+    const announcement = {
+      attempted: false,
+      delivered: false,
+      status: null as number | null,
+      command: announceCommand,
+      error: null as string | null,
+    };
 
     await createAlert({
       userId: user.id,
@@ -184,6 +207,23 @@ export async function POST(request: NextRequest) {
         ? `[${automation.announceChannel}] ${announcementText}`
         : announcementText,
     });
+
+    if (erlcKey) {
+      announcement.attempted = true;
+      const commandResponse = await runErlcCommand(erlcKey.serverKey, announceCommand);
+      announcement.status = commandResponse.status;
+      announcement.delivered = commandResponse.ok;
+      if (!commandResponse.ok) {
+        const reason = inferApiError(commandResponse.data);
+        announcement.error =
+          reason ??
+          (commandResponse.status === 422
+            ? "ER:LC rejected the command (often because the server has no active players)."
+            : "ER:LC rejected the announcement command.");
+      }
+    } else {
+      announcement.error = "ER:LC is not connected for this workspace.";
+    }
 
     await createAuditEvent({
       userId: user.id,
@@ -198,10 +238,11 @@ export async function POST(request: NextRequest) {
           pollEnabled: automation.pollEnabled,
           autoEndWhenEmpty: automation.autoEndWhenEmpty,
         },
+        announcement,
       },
     });
 
-    return NextResponse.json({ session: record }, { status: 201 });
+    return NextResponse.json({ session: record, announcement }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create session";
     return NextResponse.json({ error: message }, { status: 500 });

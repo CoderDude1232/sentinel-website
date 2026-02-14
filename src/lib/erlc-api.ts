@@ -92,3 +92,47 @@ export async function fetchErlcServerSnapshot(serverKey: string): Promise<{
 export async function fetchErlcPlayers(serverKey: string): Promise<ErlcRequestResult> {
   return request("/server/players", serverKey);
 }
+
+export async function runErlcCommand(serverKey: string, command: string): Promise<ErlcRequestResult> {
+  const startedAt = Date.now();
+  const firstResponse = await fetch(`${ERLC_API_BASE}/server/command`, {
+    method: "POST",
+    headers: {
+      ...getHeaders(serverKey),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ command }),
+    cache: "no-store",
+  });
+
+  const firstData = await parseResponse(firstResponse);
+
+  if (
+    process.env.PRC_GLOBAL_API_KEY &&
+    (firstResponse.status === 401 || firstResponse.status === 403)
+  ) {
+    const fallbackResponse = await fetch(`${ERLC_API_BASE}/server/command`, {
+      method: "POST",
+      headers: {
+        ...getHeadersWithoutGlobalAuth(serverKey),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ command }),
+      cache: "no-store",
+    });
+    const fallbackData = await parseResponse(fallbackResponse);
+    return {
+      ok: fallbackResponse.ok,
+      status: fallbackResponse.status,
+      data: fallbackData,
+      durationMs: Date.now() - startedAt,
+    };
+  }
+
+  return {
+    ok: firstResponse.ok,
+    status: firstResponse.status,
+    data: firstData,
+    durationMs: Date.now() - startedAt,
+  };
+}

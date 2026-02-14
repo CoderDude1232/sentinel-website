@@ -86,14 +86,29 @@ export default function SessionsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, startsAt, host, staffingTarget }),
       });
-      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        announcement?: {
+          attempted?: boolean;
+          delivered?: boolean;
+          status?: number | null;
+          error?: string | null;
+        };
+      };
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to create session");
       }
       setTitle("");
       setStartsAt("");
       await load();
-      setMessage("Session created and announcement alert generated.");
+      if (payload.announcement?.delivered) {
+        setMessage("Session created and announcement sent to ER:LC.");
+      } else if (payload.announcement?.attempted) {
+        const details = payload.announcement.error ?? (payload.announcement.status ? `HTTP ${payload.announcement.status}` : "unknown error");
+        setMessage(`Session created, but ER:LC announcement failed: ${details}`);
+      } else {
+        setMessage("Session created. ER:LC announcement skipped because ER:LC is not connected.");
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to create session");
     } finally {
@@ -246,7 +261,7 @@ export default function SessionsPage() {
           </form>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Create session" subtitle="Creates schedule entry and announcement alert.">
+        <CollapsibleSection title="Create session" subtitle="Creates schedule entry, logs an alert, and sends an ER:LC announcement command.">
           <form onSubmit={handleCreate} className="grid gap-2 sm:grid-cols-5">
             <input
               value={title}
