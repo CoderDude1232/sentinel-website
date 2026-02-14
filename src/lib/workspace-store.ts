@@ -76,6 +76,15 @@ export type WorkspaceSettings = {
   infractionEvidenceRequired: boolean;
 };
 
+export type OnboardingPreferences = {
+  enableModeration: boolean;
+  enableActivity: boolean;
+  enableInfractions: boolean;
+  enableSessions: boolean;
+  enableDepartments: boolean;
+  enableAlerts: boolean;
+};
+
 export type DashboardSummary = {
   cards: Array<{ title: string; value: string; details: string }>;
   feed: Array<{ time: string; label: string; level: string }>;
@@ -141,6 +150,20 @@ export async function ensureWorkspaceSchema(): Promise<void> {
       timezone TEXT NOT NULL DEFAULT 'UTC',
       session_visibility TEXT NOT NULL DEFAULT 'Team',
       infraction_evidence_required BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS onboarding_preferences (
+      discord_user_id TEXT PRIMARY KEY,
+      enable_moderation BOOLEAN NOT NULL DEFAULT true,
+      enable_activity BOOLEAN NOT NULL DEFAULT true,
+      enable_infractions BOOLEAN NOT NULL DEFAULT true,
+      enable_sessions BOOLEAN NOT NULL DEFAULT true,
+      enable_departments BOOLEAN NOT NULL DEFAULT true,
+      enable_alerts BOOLEAN NOT NULL DEFAULT true,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -266,6 +289,25 @@ export async function ensureWorkspaceSeed(user: SessionUser): Promise<void> {
           updated_at
         )
         VALUES ($1, 90, 'UTC', 'Team', true, NOW(), NOW())
+        ON CONFLICT (discord_user_id) DO NOTHING
+      `,
+      [user.id],
+    );
+
+    await client.query(
+      `
+        INSERT INTO onboarding_preferences (
+          discord_user_id,
+          enable_moderation,
+          enable_activity,
+          enable_infractions,
+          enable_sessions,
+          enable_departments,
+          enable_alerts,
+          created_at,
+          updated_at
+        )
+        VALUES ($1, true, true, true, true, true, true, NOW(), NOW())
         ON CONFLICT (discord_user_id) DO NOTHING
       `,
       [user.id],
@@ -520,6 +562,127 @@ export async function upsertWorkspaceSettings(
     timezone: row.timezone,
     sessionVisibility: row.session_visibility,
     infractionEvidenceRequired: row.infraction_evidence_required,
+  };
+}
+
+export async function getOnboardingPreferences(userId: string): Promise<OnboardingPreferences> {
+  await ensureWorkspaceSchema();
+  const pool = getDbPool();
+  const result = await pool.query<{
+    enable_moderation: boolean;
+    enable_activity: boolean;
+    enable_infractions: boolean;
+    enable_sessions: boolean;
+    enable_departments: boolean;
+    enable_alerts: boolean;
+  }>(
+    `
+      SELECT
+        enable_moderation,
+        enable_activity,
+        enable_infractions,
+        enable_sessions,
+        enable_departments,
+        enable_alerts
+      FROM onboarding_preferences
+      WHERE discord_user_id = $1
+    `,
+    [userId],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    await upsertOnboardingPreferences(userId, {
+      enableModeration: true,
+      enableActivity: true,
+      enableInfractions: true,
+      enableSessions: true,
+      enableDepartments: true,
+      enableAlerts: true,
+    });
+    return {
+      enableModeration: true,
+      enableActivity: true,
+      enableInfractions: true,
+      enableSessions: true,
+      enableDepartments: true,
+      enableAlerts: true,
+    };
+  }
+
+  return {
+    enableModeration: row.enable_moderation,
+    enableActivity: row.enable_activity,
+    enableInfractions: row.enable_infractions,
+    enableSessions: row.enable_sessions,
+    enableDepartments: row.enable_departments,
+    enableAlerts: row.enable_alerts,
+  };
+}
+
+export async function upsertOnboardingPreferences(
+  userId: string,
+  preferences: OnboardingPreferences,
+): Promise<OnboardingPreferences> {
+  await ensureWorkspaceSchema();
+  const pool = getDbPool();
+  const result = await pool.query<{
+    enable_moderation: boolean;
+    enable_activity: boolean;
+    enable_infractions: boolean;
+    enable_sessions: boolean;
+    enable_departments: boolean;
+    enable_alerts: boolean;
+  }>(
+    `
+      INSERT INTO onboarding_preferences (
+        discord_user_id,
+        enable_moderation,
+        enable_activity,
+        enable_infractions,
+        enable_sessions,
+        enable_departments,
+        enable_alerts,
+        created_at,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      ON CONFLICT (discord_user_id)
+      DO UPDATE SET
+        enable_moderation = EXCLUDED.enable_moderation,
+        enable_activity = EXCLUDED.enable_activity,
+        enable_infractions = EXCLUDED.enable_infractions,
+        enable_sessions = EXCLUDED.enable_sessions,
+        enable_departments = EXCLUDED.enable_departments,
+        enable_alerts = EXCLUDED.enable_alerts,
+        updated_at = NOW()
+      RETURNING
+        enable_moderation,
+        enable_activity,
+        enable_infractions,
+        enable_sessions,
+        enable_departments,
+        enable_alerts
+    `,
+    [
+      userId,
+      preferences.enableModeration,
+      preferences.enableActivity,
+      preferences.enableInfractions,
+      preferences.enableSessions,
+      preferences.enableDepartments,
+      preferences.enableAlerts,
+    ],
+  );
+
+  const row = result.rows[0];
+  return {
+    enableModeration: row.enable_moderation,
+    enableActivity: row.enable_activity,
+    enableInfractions: row.enable_infractions,
+    enableSessions: row.enable_sessions,
+    enableDepartments: row.enable_departments,
+    enableAlerts: row.enable_alerts,
   };
 }
 
@@ -1249,7 +1412,10 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
   };
 }
 
-export async function getOnboardingSummary(userId: string): Promise<
+export async function getOnboardingSummary(
+  userId: string,
+  options?: { erlcConnected?: boolean; enabledModulesCount?: number },
+): Promise<
   Array<{ step: string; status: "Complete" | "In progress" | "Pending"; detail: string }>
 > {
   await ensureWorkspaceSchema();
@@ -1277,6 +1443,8 @@ export async function getOnboardingSummary(userId: string): Promise<
   const sessions = Number(row?.sessions_count ?? "0");
   const moderation = Number(row?.moderation_count ?? "0");
   const webhook = Number(row?.webhook_configured ?? "0");
+  const erlcConnected = options?.erlcConnected ?? moderation > 0;
+  const enabledModulesCount = options?.enabledModulesCount ?? 0;
 
   return [
     {
@@ -1285,9 +1453,17 @@ export async function getOnboardingSummary(userId: string): Promise<
       detail: "Workspace profile and ownership established.",
     },
     {
+      step: "Choose enabled modules",
+      status: enabledModulesCount > 0 ? "Complete" : "In progress",
+      detail:
+        enabledModulesCount > 0
+          ? `${enabledModulesCount} module(s) enabled for launch.`
+          : "Select which modules to enable in your workspace.",
+    },
+    {
       step: "Connect ER:LC server",
-      status: moderation > 0 ? "Complete" : "In progress",
-      detail: moderation > 0 ? "ER:LC and panel data are active." : "Configure your integration to activate module data.",
+      status: erlcConnected ? "Complete" : "In progress",
+      detail: erlcConnected ? "ER:LC key connected and validated." : "Add your ER:LC Server-Key to activate live server data.",
     },
     {
       step: "Define departments",

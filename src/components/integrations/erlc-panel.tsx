@@ -222,7 +222,7 @@ export function ErlcPanel() {
         <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
           <h2 className="text-lg font-semibold tracking-tight">ER:LC Server-Key</h2>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
-            This key is encrypted and stored against your Discord account.
+            Use your ER:LC Server-Key from in-game server settings. This key is encrypted and stored against your Discord account.
           </p>
 
           <form onSubmit={handleSave} className="mt-4 space-y-3">
@@ -238,6 +238,9 @@ export function ErlcPanel() {
                 className="mt-1 w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
                 autoComplete="off"
               />
+              <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                Do not paste PRC global authorization keys here.
+              </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">

@@ -21,6 +21,16 @@ function normalizeServerName(data: unknown): string | null {
   return null;
 }
 
+function validationErrorFromStatus(status: number): string {
+  if (status === 401 || status === 403) {
+    return "Unauthorized key. Use your ER:LC Server-Key from in-game server settings.";
+  }
+  if (status === 429) {
+    return "ER:LC API rate-limited this request. Try again in a few seconds.";
+  }
+  return "Failed to validate ER:LC key.";
+}
+
 export async function GET(request: NextRequest) {
   const user = getSessionUserFromRequest(request);
   if (!user) {
@@ -74,7 +84,7 @@ export async function POST(request: NextRequest) {
     if (!testResult.ok) {
       return NextResponse.json(
         {
-          error: "Failed to validate ER:LC key.",
+          error: validationErrorFromStatus(testResult.status),
           details: testResult.data,
           status: testResult.status,
         },

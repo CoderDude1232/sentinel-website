@@ -19,6 +19,13 @@ function getHeaders(serverKey: string): HeadersInit {
   return headers;
 }
 
+function getHeadersWithoutGlobalAuth(serverKey: string): HeadersInit {
+  return {
+    "Server-Key": serverKey,
+    Accept: "application/json",
+  };
+}
+
 async function parseResponse(response: Response): Promise<unknown> {
   const contentType = response.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
@@ -30,16 +37,33 @@ async function parseResponse(response: Response): Promise<unknown> {
 }
 
 async function request(path: string, serverKey: string): Promise<ErlcRequestResult> {
-  const response = await fetch(`${ERLC_API_BASE}${path}`, {
+  const firstResponse = await fetch(`${ERLC_API_BASE}${path}`, {
     headers: getHeaders(serverKey),
     cache: "no-store",
   });
 
-  const data = await parseResponse(response);
+  const firstData = await parseResponse(firstResponse);
+
+  if (
+    process.env.PRC_GLOBAL_API_KEY &&
+    (firstResponse.status === 401 || firstResponse.status === 403)
+  ) {
+    const fallbackResponse = await fetch(`${ERLC_API_BASE}${path}`, {
+      headers: getHeadersWithoutGlobalAuth(serverKey),
+      cache: "no-store",
+    });
+    const fallbackData = await parseResponse(fallbackResponse);
+    return {
+      ok: fallbackResponse.ok,
+      status: fallbackResponse.status,
+      data: fallbackData,
+    };
+  }
+
   return {
-    ok: response.ok,
-    status: response.status,
-    data,
+    ok: firstResponse.ok,
+    status: firstResponse.status,
+    data: firstData,
   };
 }
 
