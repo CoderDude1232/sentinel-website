@@ -64,7 +64,12 @@ export function parseSessionToken(token: string | undefined): SessionPayload | n
     return null;
   }
 
-  const expectedSignature = signPayload(payloadB64);
+  let expectedSignature: string;
+  try {
+    expectedSignature = signPayload(payloadB64);
+  } catch {
+    return null;
+  }
   if (!safeCompare(signature, expectedSignature)) {
     return null;
   }
