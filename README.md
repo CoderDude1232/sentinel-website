@@ -45,3 +45,7 @@ npm run build
 Core product and architecture plan is documented in:
 
 - `docs/SENTINEL_V1_TECH_SPEC.md`
+
+## Deployment Note
+
+This repository may receive no-op commits to force a fresh deployment rollout when needed.
