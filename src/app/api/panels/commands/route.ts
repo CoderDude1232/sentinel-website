@@ -219,8 +219,10 @@ export async function POST(request: NextRequest) {
 
   const command = body.command?.trim() ?? "";
   const targetPlayer = body.targetPlayer?.trim() ?? "";
-  if (!command || !targetPlayer) {
-    return NextResponse.json({ error: "command and targetPlayer are required" }, { status: 400 });
+  const isGlobalTarget = !targetPlayer;
+  const resolvedTarget = isGlobalTarget ? "GLOBAL" : targetPlayer;
+  if (!command) {
+    return NextResponse.json({ error: "command is required" }, { status: 400 });
   }
 
   try {
@@ -237,7 +239,7 @@ export async function POST(request: NextRequest) {
       const blocked = await createCommandExecution({
         userId: user.id,
         command,
-        targetPlayer,
+        targetPlayer: resolvedTarget,
         actor: user.displayName,
         result: "Blocked",
         notes: "Blocked by allowlist policy",
@@ -247,9 +249,9 @@ export async function POST(request: NextRequest) {
         module: "commands",
         action: "command.blocked",
         actor: user.displayName,
-        subject: targetPlayer,
+        subject: resolvedTarget,
         afterState: blocked,
-        metadata: { reason: "allowlist" },
+        metadata: { reason: "allowlist", global: isGlobalTarget },
       });
       return NextResponse.json({ error: "Command is not allowlisted.", execution: blocked }, { status: 400 });
     }
@@ -261,7 +263,7 @@ export async function POST(request: NextRequest) {
         const blocked = await createCommandExecution({
           userId: user.id,
           command,
-          targetPlayer,
+          targetPlayer: resolvedTarget,
           actor: user.displayName,
           result: "Blocked",
           notes: `Cooldown active (${Math.ceil(policy.cooldownSeconds - elapsedSeconds)}s remaining)`,
@@ -271,9 +273,9 @@ export async function POST(request: NextRequest) {
           module: "commands",
           action: "command.blocked",
           actor: user.displayName,
-          subject: targetPlayer,
+          subject: resolvedTarget,
           afterState: blocked,
-          metadata: { reason: "cooldown" },
+          metadata: { reason: "cooldown", global: isGlobalTarget },
         });
         return NextResponse.json({ error: "Command cooldown is active.", execution: blocked }, { status: 400 });
       }
@@ -284,39 +286,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Connect ER:LC before running commands." }, { status: 400 });
     }
 
-    const playersResponse = await fetchErlcPlayers(erlcKey.serverKey);
-    const onlineNames = listPlayerNames(playersResponse.data);
-    const verifiedMap = await verifyRobloxUsernames(onlineNames);
-    const matchedOnline = onlineNames
-      .map((name) => verifiedMap.get(name.toLowerCase())?.name.toLowerCase())
-      .filter((name): name is string => Boolean(name))
-      .includes(targetPlayer.toLowerCase());
+    if (!isGlobalTarget) {
+      const playersResponse = await fetchErlcPlayers(erlcKey.serverKey);
+      const onlineNames = listPlayerNames(playersResponse.data);
+      const verifiedMap = await verifyRobloxUsernames(onlineNames);
+      const matchedOnline = onlineNames
+        .map((name) => verifiedMap.get(name.toLowerCase())?.name.toLowerCase())
+        .filter((name): name is string => Boolean(name))
+        .includes(targetPlayer.toLowerCase());
 
-    if (!matchedOnline) {
-      const blocked = await createCommandExecution({
-        userId: user.id,
-        command,
-        targetPlayer,
-        actor: user.displayName,
-        result: "Blocked",
-        notes: "Target not online in ER:LC snapshot",
-      });
-      await createAuditEvent({
-        userId: user.id,
-        module: "commands",
-        action: "command.blocked",
-        actor: user.displayName,
-        subject: targetPlayer,
-        afterState: blocked,
-        metadata: { reason: "target_offline" },
-      });
-      return NextResponse.json({ error: "Target player is not online in ER:LC.", execution: blocked }, { status: 400 });
+      if (!matchedOnline) {
+        const blocked = await createCommandExecution({
+          userId: user.id,
+          command,
+          targetPlayer: resolvedTarget,
+          actor: user.displayName,
+          result: "Blocked",
+          notes: "Target not online in ER:LC snapshot",
+        });
+        await createAuditEvent({
+          userId: user.id,
+          module: "commands",
+          action: "command.blocked",
+          actor: user.displayName,
+          subject: resolvedTarget,
+          afterState: blocked,
+          metadata: { reason: "target_offline", global: false },
+        });
+        return NextResponse.json({ error: "Target player is not online in ER:LC.", execution: blocked }, { status: 400 });
+      }
     }
 
     const execution = await createCommandExecution({
       userId: user.id,
       command,
-      targetPlayer,
+      targetPlayer: resolvedTarget,
       actor: user.displayName,
       result: policy.requiresApproval ? "Queued" : "Executed",
       notes: body.notes?.trim() || null,
@@ -327,8 +331,9 @@ export async function POST(request: NextRequest) {
       module: "commands",
       action: policy.requiresApproval ? "command.queued" : "command.executed",
       actor: user.displayName,
-      subject: targetPlayer,
+      subject: resolvedTarget,
       afterState: execution,
+      metadata: { global: isGlobalTarget },
     });
 
     return NextResponse.json({ execution }, { status: 201 });
@@ -337,4 +342,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

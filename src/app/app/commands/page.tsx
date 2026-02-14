@@ -66,11 +66,13 @@ export default function CommandsPage() {
   );
 
   const playerOptions = useMemo(
-    () =>
-      onlinePlayers.map((player) => ({
+    () => [
+      { value: "", label: "Global command (no player target)" },
+      ...onlinePlayers.map((player) => ({
         value: player.username,
         label: `${player.username} (${player.displayName})`,
       })),
+    ],
     [onlinePlayers],
   );
 
@@ -92,7 +94,7 @@ export default function CommandsPage() {
     setTargetPlayer((current) =>
       current && payload.onlinePlayers?.some((player) => player.username === current)
         ? current
-        : payload.onlinePlayers?.[0]?.username ?? "",
+        : "",
     );
   }, []);
 
@@ -108,7 +110,7 @@ export default function CommandsPage() {
       setOnlinePlayers(players);
       setLive(payload.live);
       setTargetPlayer((current) =>
-        current && players.some((player) => player.username === current) ? current : players[0]?.username ?? "",
+        current && players.some((player) => player.username === current) ? current : "",
       );
     } catch (error) {
       if (!silent) {
@@ -280,7 +282,7 @@ export default function CommandsPage() {
 
         <CollapsibleSection
           title="Submit command"
-          subtitle="Target must be currently online in ER:LC and pass policy checks."
+          subtitle="Choose an online target or leave Global selected to submit without a specific player target."
         >
           <form onSubmit={runCommand} className="space-y-3">
             <div className="grid gap-2 sm:grid-cols-2">
@@ -293,8 +295,8 @@ export default function CommandsPage() {
               <UiSelect
                 value={targetPlayer}
                 onChange={(value) => setTargetPlayer(value)}
-                options={playerOptions.length ? playerOptions : [{ value: "", label: "No online players" }]}
-                disabled={!playerOptions.length}
+                options={playerOptions}
+                disabled={loading}
               />
             </div>
             <input
@@ -306,7 +308,7 @@ export default function CommandsPage() {
             <button
               className="button-primary px-4 py-2 text-sm"
               type="submit"
-              disabled={loading || !command.trim() || !targetPlayer.trim()}
+              disabled={loading || !command.trim()}
             >
               {loading ? "Submitting..." : "Submit command"}
             </button>
@@ -322,7 +324,7 @@ export default function CommandsPage() {
             {executions.map((entry) => (
               <div key={entry.id.toString()} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold">{entry.command} ? {entry.targetPlayer}</p>
+                  <p className="font-semibold">{entry.command} ? {entry.targetPlayer === "GLOBAL" ? "Global" : entry.targetPlayer}</p>
                   <span className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
                     {entry.result}
                   </span>
