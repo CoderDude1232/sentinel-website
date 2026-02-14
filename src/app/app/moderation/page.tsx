@@ -55,6 +55,7 @@ const statusOptions: Array<{ value: string; label: string }> = [
 
 const MOD_CALL_DISPLAY_LIMIT = 12;
 const CASE_DISPLAY_LIMIT = 20;
+const QUICK_ACTION_COMMANDS = [":warn", ":kick", ":ban", ":tban", ":pm", ":unban"];
 
 export default function ModerationPage() {
   const [cases, setCases] = useState<ModerationCase[]>([]);
@@ -67,6 +68,8 @@ export default function ModerationPage() {
   const [owner, setOwner] = useState("");
   const [status, setStatus] = useState("Queued");
   const [loading, setLoading] = useState(false);
+  const [quickReason, setQuickReason] = useState("");
+  const [quickLoading, setQuickLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [prc, setPrc] = useState<{
     connected: boolean;
@@ -150,6 +153,36 @@ export default function ModerationPage() {
   );
   const resolvedPlayer = playerSource === "online" ? selectedOnlinePlayer.trim() : offlinePlayer.trim();
 
+  async function runQuickAction(command: string, target: string, reason?: string) {
+    const resolvedTarget = target.trim();
+    if (!resolvedTarget) {
+      setMessage("Select or enter a player first.");
+      return;
+    }
+    setQuickLoading(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/panels/commands", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          command,
+          targetPlayer: resolvedTarget,
+          notes: (reason ?? quickReason).trim(),
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? `Failed to run ${command}`);
+      }
+      setMessage(`Quick action submitted: ${command} ${resolvedTarget}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : `Failed to run ${command}`);
+    } finally {
+      setQuickLoading(false);
+    }
+  }
+
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
@@ -227,6 +260,38 @@ export default function ModerationPage() {
                   {call.secondary ? <p className="text-[var(--ink-soft)]">Target: {call.secondary}</p> : null}
                   {call.detail ? <p className="text-[var(--ink-soft)]">{call.detail}</p> : null}
                   {call.occurredAt ? <p className="text-xs text-[var(--ink-soft)]">{call.occurredAt}</p> : null}
+                  {call.secondary ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        className="button-secondary px-2 py-1 text-xs"
+                        disabled={quickLoading}
+                        onClick={() =>
+                          void runQuickAction(
+                            ":warn",
+                            call.secondary ?? "",
+                            `PRC mod call follow-up: ${call.primary}`,
+                          )
+                        }
+                      >
+                        Warn
+                      </button>
+                      <button
+                        type="button"
+                        className="button-secondary px-2 py-1 text-xs"
+                        disabled={quickLoading}
+                        onClick={() =>
+                          void runQuickAction(
+                            ":kick",
+                            call.secondary ?? "",
+                            `PRC mod call action: ${call.primary}`,
+                          )
+                        }
+                      >
+                        Kick
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               ))}
               {!prc.modCalls.length ? <p className="text-[var(--ink-soft)]">No active mod calls right now.</p> : null}
@@ -260,14 +325,58 @@ export default function ModerationPage() {
                 <p className="text-[var(--ink-soft)]">{item.type} - {item.player}</p>
                 <p className="text-xs text-[var(--ink-soft)]">Owner: {item.owner}</p>
                 {!["resolved", "closed"].includes(item.status.toLowerCase()) ? (
-                  <button
-                    type="button"
-                    onClick={() => void moveToResolved(item.id)}
-                    className="button-secondary mt-2 px-3 py-1 text-xs"
-                    disabled={loading}
-                  >
-                    Mark resolved
-                  </button>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => void moveToResolved(item.id)}
+                      className="button-secondary px-3 py-1 text-xs"
+                      disabled={loading}
+                    >
+                      Mark resolved
+                    </button>
+                    <button
+                      type="button"
+                      className="button-secondary px-2 py-1 text-xs"
+                      disabled={quickLoading}
+                      onClick={() =>
+                        void runQuickAction(
+                          ":warn",
+                          item.player,
+                          `${item.caseRef}: ${item.type}`,
+                        )
+                      }
+                    >
+                      Warn
+                    </button>
+                    <button
+                      type="button"
+                      className="button-secondary px-2 py-1 text-xs"
+                      disabled={quickLoading}
+                      onClick={() =>
+                        void runQuickAction(
+                          ":kick",
+                          item.player,
+                          `${item.caseRef}: ${item.type}`,
+                        )
+                      }
+                    >
+                      Kick
+                    </button>
+                    <button
+                      type="button"
+                      className="button-secondary px-2 py-1 text-xs"
+                      disabled={quickLoading}
+                      onClick={() =>
+                        void runQuickAction(
+                          ":ban",
+                          item.player,
+                          `${item.caseRef}: ${item.type}`,
+                        )
+                      }
+                    >
+                      Ban
+                    </button>
+                  </div>
                 ) : null}
               </div>
             ))}
@@ -326,6 +435,28 @@ export default function ModerationPage() {
             <div className="grid gap-2 sm:grid-cols-2">
               <UiSelect value={type} onChange={(value) => setType(value)} options={caseTypeOptions} />
               <UiSelect value={status} onChange={(value) => setStatus(value)} options={statusOptions} />
+            </div>
+            <div className="space-y-2 rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-2">
+              <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Quick actions</p>
+              <input
+                value={quickReason}
+                onChange={(event) => setQuickReason(event.target.value)}
+                className="w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+                placeholder="Action reason/message (for warn, kick, ban, tban, pm)"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_ACTION_COMMANDS.map((command) => (
+                  <button
+                    key={command}
+                    type="button"
+                    className="button-secondary px-2 py-1 text-xs"
+                    disabled={quickLoading || !resolvedPlayer}
+                    onClick={() => void runQuickAction(command, resolvedPlayer)}
+                  >
+                    {command}
+                  </button>
+                ))}
+              </div>
             </div>
             <input
               value={owner}
