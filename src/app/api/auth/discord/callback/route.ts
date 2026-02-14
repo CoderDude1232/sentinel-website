@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { exchangeCodeForAccessToken, fetchDiscordUser } from "@/lib/discord";
+import { exchangeCodeForTokenBundle, fetchDiscordUser } from "@/lib/discord";
+import { upsertDiscordOAuthToken } from "@/lib/discord-store";
 import {
   createSessionToken,
   DISCORD_OAUTH_STATE_COOKIE_NAME,
@@ -31,8 +32,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const accessToken = await exchangeCodeForAccessToken(code);
-    const user = await fetchDiscordUser(accessToken);
+    const tokenBundle = await exchangeCodeForTokenBundle(code);
+    const user = await fetchDiscordUser(tokenBundle.accessToken);
+    try {
+      await upsertDiscordOAuthToken(user.id, tokenBundle);
+    } catch {
+      // OAuth token persistence is optional for login, but required for guild-based integrations.
+    }
     const sessionToken = createSessionToken(user);
 
     const response = NextResponse.redirect(new URL("/app", request.url));

@@ -1,5 +1,6 @@
 import { ensureDbSchema, getDbPool } from "@/lib/db";
 import type { SessionUser } from "@/lib/session";
+import { getDiscordBotIntegration } from "@/lib/discord-store";
 
 declare global {
   var sentinelWorkspaceSchemaReady: boolean | undefined;
@@ -1627,7 +1628,7 @@ export async function getAlerts(userId: string): Promise<{
 }> {
   await ensureWorkspaceSchema();
   const pool = getDbPool();
-  const [alertsResult, settings] = await Promise.all([
+  const [alertsResult, settings, botIntegration] = await Promise.all([
     pool.query<{
       id: string;
       level: string;
@@ -1645,6 +1646,7 @@ export async function getAlerts(userId: string): Promise<{
       [userId],
     ),
     getWorkspaceSettings(userId),
+    getDiscordBotIntegration(userId),
   ]);
 
   return {
@@ -1659,6 +1661,14 @@ export async function getAlerts(userId: string): Promise<{
       {
         name: "Discord webhook",
         status: settings.webhookUrl ? "Configured" : "Not configured",
+        retries: "0",
+      },
+      {
+        name: "Discord bot",
+        status:
+          botIntegration.enabled && botIntegration.guildId && botIntegration.alertsChannelId
+            ? "Configured"
+            : "Not configured",
         retries: "0",
       },
     ],

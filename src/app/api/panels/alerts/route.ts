@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
+import { getDiscordBotIntegration } from "@/lib/discord-store";
+import { isDiscordBotConfigured, sendDiscordBotMessage } from "@/lib/discord";
 import {
   createAlert,
   ensureWorkspaceSeed,
@@ -73,7 +75,14 @@ export async function POST(request: NextRequest) {
     });
 
     const settings = await getWorkspaceSettings(user.id);
+    const botIntegration = await getDiscordBotIntegration(user.id);
     let webhookDelivered = false;
+    let botDelivered = false;
+    const botConfigured =
+      isDiscordBotConfigured() &&
+      botIntegration.enabled &&
+      Boolean(botIntegration.guildId) &&
+      Boolean(botIntegration.alertsChannelId);
 
     if (body.sendWebhook && settings.webhookUrl) {
       webhookDelivered = await sendDiscordWebhook(
@@ -82,10 +91,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (body.sendWebhook && botConfigured && botIntegration.alertsChannelId) {
+      botDelivered = await sendDiscordBotMessage(
+        botIntegration.alertsChannelId,
+        `Sentinel Alert\nLevel: ${level}\nSource: ${source}\nEvent: ${event}`,
+      );
+    }
+
     return NextResponse.json({
       ok: true,
       webhookDelivered,
+      botDelivered,
       webhookConfigured: Boolean(settings.webhookUrl),
+      botConfigured,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create alert";

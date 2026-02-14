@@ -38,5 +38,31 @@ export async function ensureDbSchema(): Promise<void> {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_discord_oauth_tokens (
+      discord_user_id TEXT PRIMARY KEY,
+      encrypted_access_token TEXT NOT NULL,
+      encrypted_refresh_token TEXT NULL,
+      token_type TEXT NOT NULL DEFAULT 'Bearer',
+      scope TEXT NOT NULL DEFAULT 'identify guilds',
+      expires_at TIMESTAMPTZ NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS discord_bot_integrations (
+      discord_user_id TEXT PRIMARY KEY,
+      guild_id TEXT NULL,
+      guild_name TEXT NULL,
+      alerts_channel_id TEXT NULL,
+      alerts_channel_name TEXT NULL,
+      enabled BOOLEAN NOT NULL DEFAULT false,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
   global.sentinelSchemaReady = true;
 }

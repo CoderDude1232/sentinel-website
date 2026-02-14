@@ -11,8 +11,17 @@ Sentinel is an ER:LC operations platform with modules for moderation, activity, 
 
 ## Setup
 
-1. Copy `.env.example` to `.env.local`.
-2. Fill in Discord OAuth and infrastructure values.
+1. Create a `.env` file in the project root.
+2. Fill in Discord OAuth, bot, and infrastructure values:
+   - `NEXT_PUBLIC_APP_URL`
+   - `DISCORD_CLIENT_ID`
+   - `DISCORD_CLIENT_SECRET`
+   - `DISCORD_REDIRECT_URI`
+   - `DISCORD_BOT_TOKEN` (for bot delivery)
+   - `DISCORD_BOT_CLIENT_ID` (optional, defaults to `DISCORD_CLIENT_ID`)
+   - `DATABASE_URL`
+   - `APP_ENCRYPTION_KEY`
+   - `SESSION_SECRET`
 3. Install dependencies:
 
 ```bash

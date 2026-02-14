@@ -46,17 +46,27 @@ export default function AlertsPage() {
         error?: string;
         webhookConfigured?: boolean;
         webhookDelivered?: boolean;
+        botConfigured?: boolean;
+        botDelivered?: boolean;
       };
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to send alert");
       }
       await load();
-      if (!payload.webhookConfigured) {
-        setMessage("Test alert created in-app. Configure webhook URL in settings to push to Discord.");
-      } else if (payload.webhookDelivered) {
-        setMessage("Test alert sent and delivered to Discord webhook.");
+      const transports: string[] = [];
+      if (payload.webhookConfigured) {
+        transports.push(payload.webhookDelivered ? "Webhook delivered" : "Webhook failed");
+      }
+      if (payload.botConfigured) {
+        transports.push(payload.botDelivered ? "Bot delivered" : "Bot failed");
+      }
+
+      if (!transports.length) {
+        setMessage("Test alert created in-app. Configure webhook or bot delivery in integrations.");
+      } else if (transports.every((state) => state.includes("delivered"))) {
+        setMessage(`Test alert sent. ${transports.join(" | ")}.`);
       } else {
-        setMessage("Alert saved, but webhook delivery failed.");
+        setMessage(`Alert saved. ${transports.join(" | ")}.`);
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to send alert");

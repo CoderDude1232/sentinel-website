@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </h1>
           <p className="mt-4 max-w-2xl text-sm text-[var(--ink-soft)] sm:text-base">
             Use your Discord account to access your workspace, ER:LC integration panel,
-            and team command modules.
+            and team command modules. Sentinel also requests access to view your servers for bot setup.
           </p>
 
           {errorMessage ? (
