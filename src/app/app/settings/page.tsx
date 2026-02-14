@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { UiSelect } from "@/components/ui-select";
 
 type SettingsState = {
   retentionDays: 30 | 90;
@@ -150,16 +151,15 @@ export default function SettingsPage() {
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="text-sm text-[var(--ink-soft)]">
               Retention period
-              <select
+              <UiSelect
                 value={settings.retentionDays}
-                onChange={(event) =>
-                  setSettings((prev) => ({ ...prev, retentionDays: Number(event.target.value) === 30 ? 30 : 90 }))
-                }
-                className="ui-select mt-1 w-full rounded-md px-3 py-2 text-sm"
-              >
-                <option value={30}>30 days</option>
-                <option value={90}>90 days</option>
-              </select>
+                onChange={(value) => setSettings((prev) => ({ ...prev, retentionDays: value === 30 ? 30 : 90 }))}
+                className="mt-1"
+                options={[
+                  { value: 30, label: "30 days" },
+                  { value: 90, label: "90 days" },
+                ]}
+              />
             </label>
             <label className="text-sm text-[var(--ink-soft)]">
               Discord webhook URL
