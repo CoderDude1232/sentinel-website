@@ -14,10 +14,17 @@ type ServerSnapshot = {
   playerCount: number | null;
   maxPlayers: number | null;
   queueCount: number | null;
+  serverOwner: string | null;
+  joinCode: string | null;
+  serverRegion: string | null;
+  uptime: string | null;
+  playersSample: string[];
+  queueSample: string[];
+  permissionBreakdown: Array<{ role: string; count: number }>;
   endpoints: {
-    server: { ok: boolean; status: number };
-    players: { ok: boolean; status: number };
-    queue: { ok: boolean; status: number };
+    server: { ok: boolean; status: number; latencyMs?: number };
+    players: { ok: boolean; status: number; latencyMs?: number };
+    queue: { ok: boolean; status: number; latencyMs?: number };
   } | null;
   fetchedAt: string;
 };
@@ -334,6 +341,50 @@ export function ErlcPanel() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Owner</p>
+                  <p className="mt-1 text-sm font-semibold">{snapshot.serverOwner ?? "N/A"}</p>
+                </div>
+                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Region</p>
+                  <p className="mt-1 text-sm font-semibold">{snapshot.serverRegion ?? "N/A"}</p>
+                </div>
+                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Join Code</p>
+                  <p className="mt-1 text-sm font-semibold">{snapshot.joinCode ?? "N/A"}</p>
+                </div>
+                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Uptime</p>
+                  <p className="mt-1 text-sm font-semibold">{snapshot.uptime ?? "N/A"}</p>
+                </div>
+              </div>
+
+              {snapshot.playersSample.length ? (
+                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Players Sample</p>
+                  <p className="mt-2 text-xs text-[var(--ink-soft)]">{snapshot.playersSample.join(", ")}</p>
+                </div>
+              ) : null}
+
+              {snapshot.queueSample.length ? (
+                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Queue Sample</p>
+                  <p className="mt-2 text-xs text-[var(--ink-soft)]">{snapshot.queueSample.join(", ")}</p>
+                </div>
+              ) : null}
+
+              {snapshot.permissionBreakdown.length ? (
+                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Permission Breakdown</p>
+                  <div className="mt-2 space-y-1 text-xs text-[var(--ink-soft)]">
+                    {snapshot.permissionBreakdown.map((item) => (
+                      <p key={item.role}>{item.role}: {item.count}</p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
               {snapshot.endpoints ? (
                 <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                   <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
@@ -342,12 +393,15 @@ export function ErlcPanel() {
                   <div className="mt-2 space-y-1.5 text-xs text-[var(--ink-soft)]">
                     <p>
                       /server: {endpointStateLabel(snapshot.endpoints.server.ok, snapshot.endpoints.server.status)} ({snapshot.endpoints.server.status})
+                      {typeof snapshot.endpoints.server.latencyMs === "number" ? ` - ${snapshot.endpoints.server.latencyMs}ms` : ""}
                     </p>
                     <p>
                       /server/players: {endpointStateLabel(snapshot.endpoints.players.ok, snapshot.endpoints.players.status)} ({snapshot.endpoints.players.status})
+                      {typeof snapshot.endpoints.players.latencyMs === "number" ? ` - ${snapshot.endpoints.players.latencyMs}ms` : ""}
                     </p>
                     <p>
                       /server/queue: {endpointStateLabel(snapshot.endpoints.queue.ok, snapshot.endpoints.queue.status)} ({snapshot.endpoints.queue.status})
+                      {typeof snapshot.endpoints.queue.latencyMs === "number" ? ` - ${snapshot.endpoints.queue.latencyMs}ms` : ""}
                     </p>
                   </div>
                 </div>

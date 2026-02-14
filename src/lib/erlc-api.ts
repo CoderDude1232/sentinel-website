@@ -4,6 +4,7 @@ type ErlcRequestResult = {
   ok: boolean;
   status: number;
   data: unknown;
+  durationMs: number;
 };
 
 function getHeaders(serverKey: string): HeadersInit {
@@ -37,6 +38,7 @@ async function parseResponse(response: Response): Promise<unknown> {
 }
 
 async function request(path: string, serverKey: string): Promise<ErlcRequestResult> {
+  const startedAt = Date.now();
   const firstResponse = await fetch(`${ERLC_API_BASE}${path}`, {
     headers: getHeaders(serverKey),
     cache: "no-store",
@@ -57,6 +59,7 @@ async function request(path: string, serverKey: string): Promise<ErlcRequestResu
       ok: fallbackResponse.ok,
       status: fallbackResponse.status,
       data: fallbackData,
+      durationMs: Date.now() - startedAt,
     };
   }
 
@@ -64,6 +67,7 @@ async function request(path: string, serverKey: string): Promise<ErlcRequestResu
     ok: firstResponse.ok,
     status: firstResponse.status,
     data: firstData,
+    durationMs: Date.now() - startedAt,
   };
 }
 

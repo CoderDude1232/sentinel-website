@@ -8,6 +8,14 @@ type SettingsState = {
   timezone: string;
   sessionVisibility: string;
   infractionEvidenceRequired: boolean;
+  modulePreferences: {
+    enableModeration: boolean;
+    enableActivity: boolean;
+    enableInfractions: boolean;
+    enableSessions: boolean;
+    enableDepartments: boolean;
+    enableAlerts: boolean;
+  };
   error?: string;
 };
 
@@ -18,6 +26,14 @@ export default function SettingsPage() {
     timezone: "UTC",
     sessionVisibility: "Team",
     infractionEvidenceRequired: true,
+    modulePreferences: {
+      enableModeration: true,
+      enableActivity: true,
+      enableInfractions: true,
+      enableSessions: true,
+      enableDepartments: true,
+      enableAlerts: true,
+    },
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -58,6 +74,16 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function toggleModulePreference(key: keyof SettingsState["modulePreferences"]) {
+    setSettings((prev) => ({
+      ...prev,
+      modulePreferences: {
+        ...prev.modulePreferences,
+        [key]: !prev.modulePreferences[key],
+      },
+    }));
   }
 
   return (
@@ -130,6 +156,32 @@ export default function SettingsPage() {
             />
             Require evidence attachments for infractions
           </label>
+        </article>
+
+        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+          <h2 className="text-lg font-semibold tracking-tight">Enabled Modules</h2>
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">
+            Turn modules on/off for your workspace while keeping data saved.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              ["enableModeration", "Moderation"],
+              ["enableActivity", "Activity"],
+              ["enableInfractions", "Infractions"],
+              ["enableSessions", "Sessions"],
+              ["enableDepartments", "Departments"],
+              ["enableAlerts", "Alerts"],
+            ].map(([key, label]) => (
+              <label key={key} className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={settings.modulePreferences[key as keyof SettingsState["modulePreferences"]]}
+                  onChange={() => toggleModulePreference(key as keyof SettingsState["modulePreferences"])}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
         </article>
 
         <button className="button-primary px-4 py-2 text-sm" type="submit" disabled={loading}>

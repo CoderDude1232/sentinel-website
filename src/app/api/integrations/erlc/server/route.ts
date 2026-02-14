@@ -17,6 +17,79 @@ function getObject(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function getString(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function pickString(record: Record<string, unknown> | null, keys: string[]): string | null {
+  if (!record) {
+    return null;
+  }
+  for (const key of keys) {
+    const value = getString(record[key]);
+    if (value) {
+      return value;
+    }
+  }
+  return null;
+}
+
+function getArray(value: unknown, candidateKeys: string[]): unknown[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  const record = getObject(value);
+  if (!record) {
+    return [];
+  }
+  for (const key of candidateKeys) {
+    if (Array.isArray(record[key])) {
+      return record[key] as unknown[];
+    }
+  }
+  return [];
+}
+
+function inferListName(entry: unknown): string | null {
+  if (typeof entry === "string") {
+    const trimmed = entry.trim();
+    return trimmed || null;
+  }
+  const record = getObject(entry);
+  if (!record) {
+    return null;
+  }
+  return pickString(record, [
+    "Player",
+    "player",
+    "Username",
+    "username",
+    "Name",
+    "name",
+    "Citizen",
+    "citizen",
+  ]);
+}
+
+function inferPermission(entry: unknown): string | null {
+  const record = getObject(entry);
+  if (!record) {
+    return null;
+  }
+  return pickString(record, [
+    "Permission",
+    "permission",
+    "Role",
+    "role",
+    "Rank",
+    "rank",
+  ]);
+}
+
 function inferCount(value: unknown): number | null {
   if (Array.isArray(value)) {
     return value.length;
@@ -61,6 +134,24 @@ function inferServerName(value: unknown): string | null {
   return null;
 }
 
+function inferPermissionBreakdown(playersData: unknown): Array<{ role: string; count: number }> {
+  const players = getArray(playersData, ["players", "Players", "data", "Data"]);
+  const counts = new Map<string, number>();
+
+  for (const player of players) {
+    const role = inferPermission(player);
+    if (!role) {
+      continue;
+    }
+    counts.set(role, (counts.get(role) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([role, count]) => ({ role, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+}
+
 export async function GET(request: NextRequest) {
   const user = getSessionUserFromRequest(request);
   if (!user) {
@@ -82,6 +173,19 @@ export async function GET(request: NextRequest) {
 
     const playerCount = playerCountFromServer ?? inferCount(snapshot.players.data);
     const queueCount = inferCount(snapshot.queue.data);
+    const playersSample = getArray(snapshot.players.data, ["players", "Players", "data", "Data"])
+      .map(inferListName)
+      .filter((name): name is string => Boolean(name))
+      .slice(0, 8);
+    const queueSample = getArray(snapshot.queue.data, ["queue", "Queue", "data", "Data"])
+      .map(inferListName)
+      .filter((name): name is string => Boolean(name))
+      .slice(0, 8);
+
+    const serverOwner = pickString(serverRecord, ["Owner", "owner", "ServerOwner", "serverOwner"]);
+    const joinCode = pickString(serverRecord, ["JoinCode", "joinCode", "JoinKey", "joinKey", "Code", "code"]);
+    const serverRegion = pickString(serverRecord, ["Region", "region", "Location", "location"]);
+    const uptime = pickString(serverRecord, ["Uptime", "uptime", "ServerUptime", "serverUptime"]);
 
     return NextResponse.json({
       connected: snapshot.server.ok,
@@ -89,10 +193,17 @@ export async function GET(request: NextRequest) {
       playerCount,
       maxPlayers,
       queueCount,
+      serverOwner,
+      joinCode,
+      serverRegion,
+      uptime,
+      playersSample,
+      queueSample,
+      permissionBreakdown: inferPermissionBreakdown(snapshot.players.data),
       endpoints: {
-        server: { ok: snapshot.server.ok, status: snapshot.server.status },
-        players: { ok: snapshot.players.ok, status: snapshot.players.status },
-        queue: { ok: snapshot.queue.ok, status: snapshot.queue.status },
+        server: { ok: snapshot.server.ok, status: snapshot.server.status, latencyMs: snapshot.server.durationMs },
+        players: { ok: snapshot.players.ok, status: snapshot.players.status, latencyMs: snapshot.players.durationMs },
+        queue: { ok: snapshot.queue.ok, status: snapshot.queue.status, latencyMs: snapshot.queue.durationMs },
       },
       fetchedAt: new Date().toISOString(),
     });

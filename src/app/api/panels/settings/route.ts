@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
 import {
   ensureWorkspaceSeed,
+  getOnboardingPreferences,
   getWorkspaceSettings,
+  upsertOnboardingPreferences,
   upsertWorkspaceSettings,
 } from "@/lib/workspace-store";
 
@@ -18,8 +20,11 @@ export async function GET(request: NextRequest) {
 
   try {
     await ensureWorkspaceSeed(user);
-    const settings = await getWorkspaceSettings(user.id);
-    return NextResponse.json(settings);
+    const [settings, modulePreferences] = await Promise.all([
+      getWorkspaceSettings(user.id),
+      getOnboardingPreferences(user.id),
+    ]);
+    return NextResponse.json({ ...settings, modulePreferences });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load workspace settings";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -38,6 +43,14 @@ export async function PUT(request: NextRequest) {
     timezone?: string;
     sessionVisibility?: string;
     infractionEvidenceRequired?: boolean;
+    modulePreferences?: {
+      enableModeration?: boolean;
+      enableActivity?: boolean;
+      enableInfractions?: boolean;
+      enableSessions?: boolean;
+      enableDepartments?: boolean;
+      enableAlerts?: boolean;
+    };
   };
 
   try {
@@ -47,6 +60,14 @@ export async function PUT(request: NextRequest) {
       timezone?: string;
       sessionVisibility?: string;
       infractionEvidenceRequired?: boolean;
+      modulePreferences?: {
+        enableModeration?: boolean;
+        enableActivity?: boolean;
+        enableInfractions?: boolean;
+        enableSessions?: boolean;
+        enableDepartments?: boolean;
+        enableAlerts?: boolean;
+      };
     };
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
@@ -54,14 +75,25 @@ export async function PUT(request: NextRequest) {
 
   try {
     await ensureWorkspaceSeed(user);
-    const saved = await upsertWorkspaceSettings(user.id, {
+    const settingsUpdate = upsertWorkspaceSettings(user.id, {
       retentionDays: body.retentionDays === 30 ? 30 : 90,
       webhookUrl: body.webhookUrl?.trim() ? body.webhookUrl.trim() : null,
       timezone: body.timezone?.trim() || "UTC",
       sessionVisibility: body.sessionVisibility?.trim() || "Team",
       infractionEvidenceRequired: Boolean(body.infractionEvidenceRequired),
     });
-    return NextResponse.json(saved);
+
+    const preferencesUpdate = upsertOnboardingPreferences(user.id, {
+      enableModeration: body.modulePreferences?.enableModeration ?? true,
+      enableActivity: body.modulePreferences?.enableActivity ?? true,
+      enableInfractions: body.modulePreferences?.enableInfractions ?? true,
+      enableSessions: body.modulePreferences?.enableSessions ?? true,
+      enableDepartments: body.modulePreferences?.enableDepartments ?? true,
+      enableAlerts: body.modulePreferences?.enableAlerts ?? true,
+    });
+
+    const [savedSettings, savedPreferences] = await Promise.all([settingsUpdate, preferencesUpdate]);
+    return NextResponse.json({ ...savedSettings, modulePreferences: savedPreferences });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to save workspace settings";
     return NextResponse.json({ error: message }, { status: 500 });
