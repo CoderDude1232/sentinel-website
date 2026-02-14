@@ -2,6 +2,7 @@ import Image from "next/image";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { parseSessionToken, SESSION_COOKIE_NAME } from "@/lib/session";
+import { AccountMenu } from "@/components/account-menu";
 
 export async function GlobalNavbar() {
   const cookieStore = await cookies();
@@ -29,14 +30,7 @@ export async function GlobalNavbar() {
             Workspace
           </Link>
           {session ? (
-            <>
-              <span className="hidden text-sm text-[var(--ink-soft)] sm:inline-block">
-                {session.user.displayName}
-              </span>
-              <Link href="/api/auth/logout" className="nav-quiet-link">
-                Logout
-              </Link>
-            </>
+            <AccountMenu user={session.user} />
           ) : (
             <Link href="/login" className="nav-quiet-link">
               Login
