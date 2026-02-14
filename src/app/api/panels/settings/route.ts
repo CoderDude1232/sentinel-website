@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
+import { clearDiscordBotIntegration } from "@/lib/discord-store";
 import { getUserErlcKey } from "@/lib/erlc-store";
-import { createAuditEvent } from "@/lib/ops-store";
+import { createAuditEvent, resetOpsData } from "@/lib/ops-store";
 import {
   ensureWorkspaceSeed,
   getOnboardingPreferences,
   getOnboardingSummary,
+  resetWorkspaceData,
   getWorkspaceSettings,
   upsertOnboardingPreferences,
   upsertWorkspaceSettings,
@@ -22,6 +24,14 @@ const REQUIRED_ONBOARDING_STEPS = new Set([
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+function isOnboardingComplete(
+  steps: Array<{ step: string; status: "Complete" | "In progress" | "Pending" }>,
+): boolean {
+  return steps
+    .filter((step) => REQUIRED_ONBOARDING_STEPS.has(step.step))
+    .every((step) => step.status === "Complete");
 }
 
 export async function GET(request: NextRequest) {
@@ -42,9 +52,7 @@ export async function GET(request: NextRequest) {
       enabledModulesCount,
       erlcConnected: Boolean(erlcKey),
     });
-    const onboardingComplete = steps
-      .filter((step) => REQUIRED_ONBOARDING_STEPS.has(step.step))
-      .every((step) => step.status === "Complete");
+    const onboardingComplete = isOnboardingComplete(steps);
     const response = NextResponse.json({ ...settings, modulePreferences, onboardingComplete });
     response.cookies.set(ONBOARDING_COOKIE_NAME, onboardingComplete ? "1" : "0", {
       httpOnly: false,
@@ -170,9 +178,7 @@ export async function PUT(request: NextRequest) {
       enabledModulesCount,
       erlcConnected: Boolean(erlcKey),
     });
-    const onboardingComplete = steps
-      .filter((step) => REQUIRED_ONBOARDING_STEPS.has(step.step))
-      .every((step) => step.status === "Complete");
+    const onboardingComplete = isOnboardingComplete(steps);
 
     const response = NextResponse.json({
       ...savedSettings,
@@ -205,6 +211,45 @@ export async function PUT(request: NextRequest) {
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to save workspace settings";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const user = getSessionUserFromRequest(request);
+  if (!user) {
+    return unauthorized();
+  }
+
+  let body: { confirmReset?: boolean } = {};
+  try {
+    body = (await request.json()) as { confirmReset?: boolean };
+  } catch {
+    body = {};
+  }
+
+  if (!body.confirmReset) {
+    return NextResponse.json({ error: "Reset confirmation is required." }, { status: 400 });
+  }
+
+  try {
+    await ensureWorkspaceSeed(user);
+    await Promise.all([
+      resetWorkspaceData(user.id),
+      resetOpsData(user.id),
+      clearDiscordBotIntegration(user.id),
+    ]);
+
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set(ONBOARDING_COOKIE_NAME, "0", {
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return response;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to reset workspace data";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

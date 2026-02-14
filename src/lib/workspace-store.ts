@@ -115,6 +115,36 @@ export type DashboardSummary = {
   nextActions: Array<{ label: string; href: string }>;
 };
 
+const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
+  retentionDays: 90,
+  webhookUrl: null,
+  timezone: "UTC",
+  sessionVisibility: "Team",
+  infractionEvidenceRequired: true,
+};
+
+const DEFAULT_ONBOARDING_PREFERENCES: OnboardingPreferences = {
+  enableModeration: false,
+  enableActivity: false,
+  enableInfractions: false,
+  enableSessions: false,
+  enableDepartments: false,
+  enableAlerts: false,
+  enableRbac: false,
+  enableTeams: false,
+  enableWorkflows: false,
+  enableAppeals: false,
+  enableAutomation: false,
+  enableProfiles: false,
+  enableLogs: false,
+  enableRealtime: false,
+  enableCommands: false,
+  enableBackups: false,
+  enableApiKeys: false,
+  enableObservability: false,
+  enableBilling: false,
+};
+
 function toIso(value: string | Date): string {
   return new Date(value).toISOString();
 }
@@ -320,199 +350,26 @@ export async function ensureWorkspaceSchema(): Promise<void> {
   global.sentinelWorkspaceSchemaReady = true;
 }
 
-export async function ensureWorkspaceSeed(user: SessionUser): Promise<void> {
+export async function ensureWorkspaceSeed(_user: SessionUser): Promise<void> {
+  await ensureWorkspaceSchema();
+}
+
+export async function resetWorkspaceData(userId: string): Promise<void> {
   await ensureWorkspaceSchema();
   const pool = getDbPool();
-
-  const claim = await pool.query(
-    `
-      INSERT INTO workspace_bootstrap (discord_user_id, created_at)
-      VALUES ($1, NOW())
-      ON CONFLICT (discord_user_id) DO NOTHING
-      RETURNING discord_user_id
-    `,
-    [user.id],
-  );
-
-  if (claim.rowCount === 0) {
-    return;
-  }
-
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-
-    await client.query(
-      `
-        INSERT INTO workspace_settings (
-          discord_user_id,
-          retention_days,
-          timezone,
-          session_visibility,
-          infraction_evidence_required,
-          created_at,
-          updated_at
-        )
-        VALUES ($1, 90, 'UTC', 'Team', true, NOW(), NOW())
-        ON CONFLICT (discord_user_id) DO NOTHING
-      `,
-      [user.id],
-    );
-
-    await client.query(
-      `
-        INSERT INTO onboarding_preferences (
-          discord_user_id,
-          enable_moderation,
-          enable_activity,
-          enable_infractions,
-          enable_sessions,
-          enable_departments,
-          enable_alerts,
-          enable_rbac,
-          enable_teams,
-          enable_workflows,
-          enable_appeals,
-          enable_automation,
-          enable_profiles,
-          enable_logs,
-          enable_realtime,
-          enable_commands,
-          enable_backups,
-          enable_api_keys,
-          enable_observability,
-          enable_billing,
-          created_at,
-          updated_at
-        )
-        VALUES ($1, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, NOW(), NOW())
-        ON CONFLICT (discord_user_id) DO NOTHING
-      `,
-      [user.id],
-    );
-
-    const now = Date.now();
-    const session1 = new Date(now + 2 * 60 * 60 * 1000).toISOString();
-    const session2 = new Date(now + 26 * 60 * 60 * 1000).toISOString();
-    const session3 = new Date(now - 24 * 60 * 60 * 1000).toISOString();
-
-    await client.query(
-      `
-        INSERT INTO departments (discord_user_id, name, lead_name, members, scope, created_at)
-        VALUES
-          ($1, 'Law Enforcement', $2, 12, 'Full moderation and response operations', NOW()),
-          ($1, 'Communications', 'Dispatch Lead', 6, 'Dispatch and alert handling', NOW()),
-          ($1, 'Training', 'Training Lead', 4, 'Staff onboarding and performance reviews', NOW())
-      `,
-      [user.id, user.displayName],
-    );
-
-    await client.query(
-      `
-        INSERT INTO moderation_cases (
-          discord_user_id,
-          case_ref,
-          case_type,
-          player_name,
-          status,
-          owner_name,
-          created_at
-        )
-        VALUES
-          ($1, 'MC-4821', 'Mod Call', 'Driver_091', 'Queued', 'Unassigned', NOW() - INTERVAL '12 minutes'),
-          ($1, 'CMD-2194', 'Command Review', 'UnitEcho', 'Under review', $2, NOW() - INTERVAL '34 minutes')
-      `,
-      [user.id, user.displayName],
-    );
-
-    await client.query(
-      `
-        INSERT INTO infractions (
-          discord_user_id,
-          case_ref,
-          target_name,
-          level,
-          issuer_name,
-          appeal_status,
-          created_at
-        )
-        VALUES
-          ($1, 'INF-301', 'UnitEcho', 'Strike', $2, 'Open', NOW() - INTERVAL '3 hours'),
-          ($1, 'INF-300', 'RoadLead', 'Warning', $2, 'Closed', NOW() - INTERVAL '1 day')
-      `,
-      [user.id, user.displayName],
-    );
-
-    await client.query(
-      `
-        INSERT INTO sessions (
-          discord_user_id,
-          title,
-          starts_at,
-          host_name,
-          staffing_current,
-          staffing_target,
-          status,
-          rating,
-          created_at
-        )
-        VALUES
-          ($1, 'Evening Patrol Session', $2, $3, 11, 14, 'Scheduled', NULL, NOW()),
-          ($1, 'Weekend Training', $4, 'Training Lead', 7, 10, 'Scheduled', NULL, NOW()),
-          ($1, 'Night Operations Review', $5, $3, 9, 10, 'Completed', 4.60, NOW() - INTERVAL '1 day')
-      `,
-      [user.id, session1, user.displayName, session2, session3],
-    );
-
-    await client.query(
-      `
-        INSERT INTO alerts (discord_user_id, level, event_text, source, created_at)
-        VALUES
-          ($1, 'Info', 'Workspace initialized and baseline modules seeded', 'System', NOW() - INTERVAL '20 minutes'),
-          ($1, 'Warning', 'Moderation queue has active unresolved cases', 'Moderation', NOW() - INTERVAL '12 minutes')
-      `,
-      [user.id],
-    );
-
-    await client.query(
-      `
-        INSERT INTO activity_events (
-          discord_user_id,
-          actor_name,
-          event_type,
-          context_text,
-          response_seconds,
-          created_at
-        )
-        VALUES
-          ($1, $2, 'Moderation', 'Opened case CMD-2194', 160, NOW() - INTERVAL '34 minutes'),
-          ($1, 'Training Lead', 'Session', 'Updated staffing for Weekend Training', 130, NOW() - INTERVAL '1 hour'),
-          ($1, $2, 'Infraction', 'Issued INF-301 (Strike)', 210, NOW() - INTERVAL '3 hours')
-      `,
-      [user.id, user.displayName],
-    );
-
-    await client.query(
-      `
-        INSERT INTO workspace_feature_entries (discord_user_id, feature_key, title, status, payload, created_at, updated_at)
-        VALUES
-          ($1, 'rbac', 'Owner role baseline', 'Active', '{"permissions":["workspace.manage","roles.manage","integrations.manage"]}'::jsonb, NOW(), NOW()),
-          ($1, 'teams', 'Primary team created', 'Active', '{"teamName":"Command Team","members":[{"name":"Owner","role":"Owner"}]}'::jsonb, NOW(), NOW()),
-          ($1, 'workflows', 'Default moderation workflow', 'Active', '{"slaMinutes":15,"escalation":"Owner"}'::jsonb, NOW(), NOW()),
-          ($1, 'appeals', 'Appeals intake enabled', 'Active', '{"reviewWindowHours":48}'::jsonb, NOW(), NOW()),
-          ($1, 'automation', 'Session reminders configured', 'Active', '{"reminders":["30m","10m"],"channel":"staff-ops"}'::jsonb, NOW(), NOW()),
-          ($1, 'profiles', 'Staff profile indexing', 'Active', '{"source":"activity+sessions"}'::jsonb, NOW(), NOW()),
-          ($1, 'logs', 'Command log explorer', 'Active', '{"savedViews":["All Commands"]}'::jsonb, NOW(), NOW()),
-          ($1, 'realtime', 'Realtime channel health', 'Active', '{"transport":"polling","upgrade":"websocket-ready"}'::jsonb, NOW(), NOW()),
-          ($1, 'commands', 'Safe command controls', 'Active', '{"allowlist":[":pm",":announce"]}'::jsonb, NOW(), NOW()),
-          ($1, 'backups', 'Nightly export policy', 'Active', '{"format":"json","frequency":"daily"}'::jsonb, NOW(), NOW()),
-          ($1, 'api_keys', 'Integration API token scope', 'Active', '{"scopes":["read:dashboard","write:alerts"]}'::jsonb, NOW(), NOW()),
-          ($1, 'observability', 'Runtime health checks', 'Active', '{"intervalSeconds":60}'::jsonb, NOW(), NOW()),
-          ($1, 'billing', 'Billing module readiness', 'Planned', '{"status":"reserved","enabled":false}'::jsonb, NOW(), NOW())
-      `,
-      [user.id],
-    );
-
+    await client.query(`DELETE FROM workspace_feature_entries WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM moderation_cases WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM infractions WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM sessions WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM departments WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM alerts WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM activity_events WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM onboarding_preferences WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM workspace_settings WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM workspace_bootstrap WHERE discord_user_id = $1`, [userId]);
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");
@@ -584,20 +441,7 @@ export async function getWorkspaceSettings(userId: string): Promise<WorkspaceSet
 
   const row = result.rows[0];
   if (!row) {
-    await upsertWorkspaceSettings(userId, {
-      retentionDays: 90,
-      webhookUrl: null,
-      timezone: "UTC",
-      sessionVisibility: "Team",
-      infractionEvidenceRequired: true,
-    });
-    return {
-      retentionDays: 90,
-      webhookUrl: null,
-      timezone: "UTC",
-      sessionVisibility: "Team",
-      infractionEvidenceRequired: true,
-    };
+    return { ...DEFAULT_WORKSPACE_SETTINGS };
   }
 
   return {
@@ -717,48 +561,7 @@ export async function getOnboardingPreferences(userId: string): Promise<Onboardi
 
   const row = result.rows[0];
   if (!row) {
-    await upsertOnboardingPreferences(userId, {
-      enableModeration: true,
-      enableActivity: true,
-      enableInfractions: true,
-      enableSessions: true,
-      enableDepartments: true,
-      enableAlerts: true,
-      enableRbac: true,
-      enableTeams: true,
-      enableWorkflows: true,
-      enableAppeals: true,
-      enableAutomation: true,
-      enableProfiles: true,
-      enableLogs: true,
-      enableRealtime: true,
-      enableCommands: true,
-      enableBackups: true,
-      enableApiKeys: true,
-      enableObservability: true,
-      enableBilling: false,
-    });
-    return {
-      enableModeration: true,
-      enableActivity: true,
-      enableInfractions: true,
-      enableSessions: true,
-      enableDepartments: true,
-      enableAlerts: true,
-      enableRbac: true,
-      enableTeams: true,
-      enableWorkflows: true,
-      enableAppeals: true,
-      enableAutomation: true,
-      enableProfiles: true,
-      enableLogs: true,
-      enableRealtime: true,
-      enableCommands: true,
-      enableBackups: true,
-      enableApiKeys: true,
-      enableObservability: true,
-      enableBilling: false,
-    };
+    return { ...DEFAULT_ONBOARDING_PREFERENCES };
   }
 
   return {

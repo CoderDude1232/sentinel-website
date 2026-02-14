@@ -63,6 +63,7 @@ export default function SettingsPage() {
     },
   });
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
@@ -111,6 +112,35 @@ export default function SettingsPage() {
         [key]: !prev.modulePreferences[key],
       },
     }));
+  }
+
+  async function resetWorkspace() {
+    const confirmed = window.confirm(
+      "Reset all workspace data, module settings, logs, and panel records? Your ER:LC API key will be kept.",
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setResetting(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/panels/settings", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmReset: true }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to reset workspace");
+      }
+      setMessage("Workspace reset complete. Redirecting to onboarding...");
+      window.location.href = "/app/onboarding";
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to reset workspace");
+    } finally {
+      setResetting(false);
+    }
   }
 
   return (
@@ -226,6 +256,14 @@ export default function SettingsPage() {
 
         <button className="button-primary px-4 py-2 text-sm" type="submit" disabled={loading}>
           {loading ? "Saving..." : "Save changes"}
+        </button>
+        <button
+          className="button-secondary ml-2 px-4 py-2 text-sm"
+          type="button"
+          disabled={resetting}
+          onClick={() => void resetWorkspace()}
+        >
+          {resetting ? "Resetting..." : "Reset Workspace Data"}
         </button>
       </form>
     </div>

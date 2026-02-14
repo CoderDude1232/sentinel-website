@@ -244,3 +244,14 @@ export async function disconnectDiscordBotIntegration(discordUserId: string): Pr
   );
 }
 
+export async function clearDiscordBotIntegration(discordUserId: string): Promise<void> {
+  await ensureDbSchema();
+  const pool = getDbPool();
+  await pool.query(
+    `
+      DELETE FROM discord_bot_integrations
+      WHERE discord_user_id = $1
+    `,
+    [discordUserId],
+  );
+}

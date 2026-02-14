@@ -178,10 +178,13 @@ export default function ModerationPage() {
           command,
           targetPlayer: resolvedTarget,
           notes: (reason ?? quickReason).trim(),
+          quickAction: true,
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as {
         error?: string;
+        queuedByCooldown?: boolean;
+        cooldownRemaining?: number;
         execution?: { result?: CommandExecutionState };
       };
       if (!response.ok) {
@@ -191,7 +194,13 @@ export default function ModerationPage() {
       if (result === "Executed") {
         setMessage(`Quick action executed in ER:LC: ${command} ${resolvedTarget}.`);
       } else if (result === "Queued") {
-        setMessage(`Quick action queued by command policy: ${command} ${resolvedTarget}.`);
+        if (payload.queuedByCooldown) {
+          const remainingText =
+            typeof payload.cooldownRemaining === "number" ? ` (${payload.cooldownRemaining}s)` : "";
+          setMessage(`Quick action queued due to cooldown${remainingText}: ${command} ${resolvedTarget}.`);
+        } else {
+          setMessage(`Quick action queued by command policy: ${command} ${resolvedTarget}.`);
+        }
       } else {
         setMessage(`Quick action was blocked: ${command} ${resolvedTarget}.`);
       }

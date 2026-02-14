@@ -205,8 +205,7 @@ export async function getCommandPolicy(userId: string): Promise<CommandPolicy> {
 
   const row = result.rows[0];
   if (!row) {
-    await upsertCommandPolicy(userId, DEFAULT_COMMAND_POLICY);
-    return DEFAULT_COMMAND_POLICY;
+    return { ...DEFAULT_COMMAND_POLICY };
   }
 
   const parsedPolicy: CommandPolicy = {
@@ -393,8 +392,7 @@ export async function getInfractionPolicy(userId: string): Promise<InfractionPol
 
   const row = result.rows[0];
   if (!row) {
-    await upsertInfractionPolicy(userId, DEFAULT_INFRACTION_POLICY);
-    return DEFAULT_INFRACTION_POLICY;
+    return { ...DEFAULT_INFRACTION_POLICY };
   }
 
   return {
@@ -507,8 +505,7 @@ export async function getSessionAutomationSettings(userId: string): Promise<Sess
 
   const row = result.rows[0];
   if (!row) {
-    await upsertSessionAutomationSettings(userId, DEFAULT_SESSION_AUTOMATION);
-    return DEFAULT_SESSION_AUTOMATION;
+    return { ...DEFAULT_SESSION_AUTOMATION };
   }
 
   return {
@@ -687,4 +684,24 @@ export async function listAuditEvents(input: {
     metadata: asObject(row.metadata),
     createdAt: toIso(row.created_at),
   }));
+}
+
+export async function resetOpsData(userId: string): Promise<void> {
+  await ensureOpsSchema();
+  const pool = getDbPool();
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(`DELETE FROM command_executions WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM command_policies WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM infraction_policies WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM session_automation_settings WHERE discord_user_id = $1`, [userId]);
+    await client.query(`DELETE FROM audit_events WHERE discord_user_id = $1`, [userId]);
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }

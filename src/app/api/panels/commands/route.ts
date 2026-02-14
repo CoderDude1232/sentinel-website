@@ -274,9 +274,14 @@ export async function POST(request: NextRequest) {
     return unauthorized();
   }
 
-  let body: { command?: string; targetPlayer?: string; notes?: string };
+  let body: { command?: string; targetPlayer?: string; notes?: string; quickAction?: boolean };
   try {
-    body = (await request.json()) as { command?: string; targetPlayer?: string; notes?: string };
+    body = (await request.json()) as {
+      command?: string;
+      targetPlayer?: string;
+      notes?: string;
+      quickAction?: boolean;
+    };
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
@@ -287,6 +292,7 @@ export async function POST(request: NextRequest) {
   const resolvedTarget = isGlobalTarget ? "GLOBAL" : targetPlayer;
   const commandKey = command.toLowerCase();
   const executionNotes = body.notes?.trim() || null;
+  const isQuickAction = Boolean(body.quickAction);
   if (!command) {
     return NextResponse.json({ error: "command is required" }, { status: 400 });
   }
@@ -334,13 +340,38 @@ export async function POST(request: NextRequest) {
     if (last && policy.cooldownSeconds > 0) {
       const elapsedSeconds = (Date.now() - new Date(last.createdAt).getTime()) / 1000;
       if (elapsedSeconds < policy.cooldownSeconds) {
+        const cooldownRemaining = Math.ceil(policy.cooldownSeconds - elapsedSeconds);
+        if (isQuickAction) {
+          const queued = await createCommandExecution({
+            userId: user.id,
+            command,
+            targetPlayer: resolvedTarget,
+            actor: user.displayName,
+            result: "Queued",
+            notes: `Queued by cooldown (${cooldownRemaining}s remaining)`,
+          });
+          await createAuditEvent({
+            userId: user.id,
+            module: "commands",
+            action: "command.queued",
+            actor: user.displayName,
+            subject: resolvedTarget,
+            afterState: queued,
+            metadata: { reason: "cooldown_queue", global: isGlobalTarget, quickAction: true },
+          });
+          return NextResponse.json(
+            { execution: queued, queuedByCooldown: true, cooldownRemaining },
+            { status: 201 },
+          );
+        }
+
         const blocked = await createCommandExecution({
           userId: user.id,
           command,
           targetPlayer: resolvedTarget,
           actor: user.displayName,
           result: "Blocked",
-          notes: `Cooldown active (${Math.ceil(policy.cooldownSeconds - elapsedSeconds)}s remaining)`,
+          notes: `Cooldown active (${cooldownRemaining}s remaining)`,
         });
         await createAuditEvent({
           userId: user.id,
