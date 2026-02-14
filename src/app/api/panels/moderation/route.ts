@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
+import { fetchErlcModCalls } from "@/lib/erlc-api";
+import { getUserErlcKey } from "@/lib/erlc-store";
+import { parseGenericLogItems } from "@/lib/erlc-normalize";
 import {
   addModerationCase,
   ensureWorkspaceSeed,
@@ -21,8 +24,34 @@ export async function GET(request: NextRequest) {
 
   try {
     await ensureWorkspaceSeed(user);
-    const cases = await getModerationCases(user.id);
-    return NextResponse.json({ cases });
+    const [cases, erlcKey] = await Promise.all([
+      getModerationCases(user.id),
+      getUserErlcKey(user.id),
+    ]);
+
+    if (!erlcKey) {
+      return NextResponse.json({
+        cases,
+        prc: {
+          connected: false,
+          modCalls: [],
+          openModCalls: 0,
+          fetchedAt: null,
+        },
+      });
+    }
+
+    const modCallsResponse = await fetchErlcModCalls(erlcKey.serverKey);
+    const modCalls = parseGenericLogItems(modCallsResponse.data);
+    return NextResponse.json({
+      cases,
+      prc: {
+        connected: true,
+        modCalls: modCalls.slice(0, 20),
+        openModCalls: modCalls.length,
+        fetchedAt: new Date().toISOString(),
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load moderation cases";
     return NextResponse.json({ error: message }, { status: 500 });

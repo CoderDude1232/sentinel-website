@@ -5,6 +5,12 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 type DepartmentsResponse = {
   departments: Array<{ id: number; name: string; members: number; lead: string; scope: string }>;
   permissionBands: Array<{ level: string; rights: string }>;
+  prc?: {
+    connected: boolean;
+    staff: Array<{ name: string; role: string | null }>;
+    count: number;
+    fetchedAt: string | null;
+  };
   error?: string;
 };
 
@@ -124,6 +130,23 @@ export default function DepartmentsPage() {
             ))}
           </div>
         </article>
+      </section>
+
+      <section className="mt-4 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+        <h2 className="text-lg font-semibold tracking-tight">Live PRC staff roster</h2>
+        {!data.prc?.connected ? (
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">Connect ER:LC to map live staff by rank/permission.</p>
+        ) : (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {data.prc.staff.map((entry, index) => (
+              <div key={`${entry.name}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
+                <p className="font-semibold">{entry.name}</p>
+                <p className="text-[var(--ink-soft)]">{entry.role ?? "Role unknown"}</p>
+              </div>
+            ))}
+            {!data.prc.staff.length ? <p className="text-sm text-[var(--ink-soft)]">No staff entries returned by PRC.</p> : null}
+          </div>
+        )}
       </section>
     </div>
   );

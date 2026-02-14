@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
+import {
+  fetchErlcCommandLogs,
+  fetchErlcJoinLogs,
+  fetchErlcKillLogs,
+} from "@/lib/erlc-api";
+import { getUserErlcKey } from "@/lib/erlc-store";
+import { parseGenericLogItems } from "@/lib/erlc-normalize";
 import { listAuditEvents } from "@/lib/ops-store";
 import { ensureWorkspaceSeed } from "@/lib/workspace-store";
 
@@ -26,13 +33,16 @@ export async function GET(request: NextRequest) {
 
   try {
     await ensureWorkspaceSeed(user);
-    const events = await listAuditEvents({
-      userId: user.id,
-      module,
-      action,
-      actor,
-      limit: Number.isFinite(limit) ? limit : 200,
-    });
+    const [events, erlcKey] = await Promise.all([
+      listAuditEvents({
+        userId: user.id,
+        module,
+        action,
+        actor,
+        limit: Number.isFinite(limit) ? limit : 200,
+      }),
+      getUserErlcKey(user.id),
+    ]);
 
     if (format === "csv") {
       const header = [
@@ -68,10 +78,37 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ events });
+    if (!erlcKey) {
+      return NextResponse.json({
+        events,
+        prcLogs: {
+          connected: false,
+          joinLogs: [],
+          killLogs: [],
+          commandLogs: [],
+          fetchedAt: null,
+        },
+      });
+    }
+
+    const [joinLogsResponse, killLogsResponse, commandLogsResponse] = await Promise.all([
+      fetchErlcJoinLogs(erlcKey.serverKey),
+      fetchErlcKillLogs(erlcKey.serverKey),
+      fetchErlcCommandLogs(erlcKey.serverKey),
+    ]);
+
+    return NextResponse.json({
+      events,
+      prcLogs: {
+        connected: true,
+        joinLogs: parseGenericLogItems(joinLogsResponse.data).slice(0, 15),
+        killLogs: parseGenericLogItems(killLogsResponse.data).slice(0, 15),
+        commandLogs: parseGenericLogItems(commandLogsResponse.data).slice(0, 15),
+        fetchedAt: new Date().toISOString(),
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load audit events";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

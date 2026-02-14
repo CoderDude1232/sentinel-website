@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
 import { getDiscordBotIntegration } from "@/lib/discord-store";
 import { isDiscordBotConfigured, sendDiscordBotMessage } from "@/lib/discord";
+import { fetchErlcBans, fetchErlcModCalls } from "@/lib/erlc-api";
+import { getUserErlcKey } from "@/lib/erlc-store";
+import { parseGenericLogItems } from "@/lib/erlc-normalize";
 import {
   createAlert,
   ensureWorkspaceSeed,
@@ -35,8 +38,44 @@ export async function GET(request: NextRequest) {
 
   try {
     await ensureWorkspaceSeed(user);
-    const data = await getAlerts(user.id);
-    return NextResponse.json(data);
+    const [data, erlcKey] = await Promise.all([
+      getAlerts(user.id),
+      getUserErlcKey(user.id),
+    ]);
+
+    if (!erlcKey) {
+      return NextResponse.json({
+        ...data,
+        prcSignals: {
+          connected: false,
+          activeModCalls: 0,
+          activeBans: 0,
+          modCalls: [],
+          bans: [],
+          fetchedAt: null,
+        },
+      });
+    }
+
+    const [modCallsResponse, bansResponse] = await Promise.all([
+      fetchErlcModCalls(erlcKey.serverKey),
+      fetchErlcBans(erlcKey.serverKey),
+    ]);
+
+    const modCalls = parseGenericLogItems(modCallsResponse.data);
+    const bans = parseGenericLogItems(bansResponse.data);
+
+    return NextResponse.json({
+      ...data,
+      prcSignals: {
+        connected: true,
+        activeModCalls: modCalls.length,
+        activeBans: bans.length,
+        modCalls: modCalls.slice(0, 10),
+        bans: bans.slice(0, 10),
+        fetchedAt: new Date().toISOString(),
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load alerts";
     return NextResponse.json({ error: message }, { status: 500 });

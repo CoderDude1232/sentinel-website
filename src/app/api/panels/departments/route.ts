@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
+import { fetchErlcStaff } from "@/lib/erlc-api";
+import { getUserErlcKey } from "@/lib/erlc-store";
+import { parseStaffItems } from "@/lib/erlc-normalize";
 import { addDepartment, ensureWorkspaceSeed, getDepartments } from "@/lib/workspace-store";
 
 function unauthorized() {
@@ -14,8 +17,34 @@ export async function GET(request: NextRequest) {
 
   try {
     await ensureWorkspaceSeed(user);
-    const data = await getDepartments(user.id);
-    return NextResponse.json(data);
+    const [data, erlcKey] = await Promise.all([
+      getDepartments(user.id),
+      getUserErlcKey(user.id),
+    ]);
+
+    if (!erlcKey) {
+      return NextResponse.json({
+        ...data,
+        prc: {
+          connected: false,
+          staff: [],
+          count: 0,
+          fetchedAt: null,
+        },
+      });
+    }
+
+    const staffResponse = await fetchErlcStaff(erlcKey.serverKey);
+    const staff = parseStaffItems(staffResponse.data);
+    return NextResponse.json({
+      ...data,
+      prc: {
+        connected: true,
+        staff: staff.slice(0, 60),
+        count: staff.length,
+        fetchedAt: new Date().toISOString(),
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load departments";
     return NextResponse.json({ error: message }, { status: 500 });

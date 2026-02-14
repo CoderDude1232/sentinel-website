@@ -5,6 +5,14 @@ import { useCallback, useEffect, useState } from "react";
 type AlertsResponse = {
   feed: Array<{ id: number; level: string; event: string; source: string; createdAt: string }>;
   webhookStatus: Array<{ name: string; status: string; retries: string }>;
+  prcSignals?: {
+    connected: boolean;
+    activeModCalls: number;
+    activeBans: number;
+    modCalls: Array<{ primary: string; secondary: string | null; detail: string | null; occurredAt: string | null }>;
+    bans: Array<{ primary: string; secondary: string | null; detail: string | null; occurredAt: string | null }>;
+    fetchedAt: string | null;
+  };
   error?: string;
 };
 
@@ -121,6 +129,40 @@ export default function AlertsPage() {
             {loading ? "Sending..." : "Send test alert"}
           </button>
         </article>
+      </section>
+
+      <section className="mt-4 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+        <h2 className="text-lg font-semibold tracking-tight">Live PRC risk signals</h2>
+        {!data.prcSignals?.connected ? (
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">Connect ER:LC to stream mod-call and ban pressure into alerts.</p>
+        ) : (
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+                Open mod calls ({data.prcSignals.activeModCalls})
+              </p>
+              {data.prcSignals.modCalls.map((entry, index) => (
+                <div key={`${entry.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
+                  <p className="font-semibold">{entry.primary}</p>
+                  {entry.detail ? <p className="text-[var(--ink-soft)]">{entry.detail}</p> : null}
+                </div>
+              ))}
+              {!data.prcSignals.modCalls.length ? <p className="text-sm text-[var(--ink-soft)]">No open mod calls.</p> : null}
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
+                Active bans ({data.prcSignals.activeBans})
+              </p>
+              {data.prcSignals.bans.map((entry, index) => (
+                <div key={`${entry.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
+                  <p className="font-semibold">{entry.primary}</p>
+                  {entry.detail ? <p className="text-[var(--ink-soft)]">{entry.detail}</p> : null}
+                </div>
+              ))}
+              {!data.prcSignals.bans.length ? <p className="text-sm text-[var(--ink-soft)]">No active bans.</p> : null}
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

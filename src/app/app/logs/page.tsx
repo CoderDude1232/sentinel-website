@@ -19,11 +19,25 @@ type AuditEvent = {
 
 type AuditResponse = {
   events: AuditEvent[];
+  prcLogs?: {
+    connected: boolean;
+    joinLogs: Array<{ primary: string; secondary: string | null; detail: string | null; occurredAt: string | null }>;
+    killLogs: Array<{ primary: string; secondary: string | null; detail: string | null; occurredAt: string | null }>;
+    commandLogs: Array<{ primary: string; secondary: string | null; detail: string | null; occurredAt: string | null }>;
+    fetchedAt: string | null;
+  };
   error?: string;
 };
 
 export default function LogsPage() {
   const [events, setEvents] = useState<AuditEvent[]>([]);
+  const [prcLogs, setPrcLogs] = useState<NonNullable<AuditResponse["prcLogs"]>>({
+    connected: false,
+    joinLogs: [],
+    killLogs: [],
+    commandLogs: [],
+    fetchedAt: null,
+  });
   const [moduleFilter, setModuleFilter] = useState("");
   const [actionFilter, setActionFilter] = useState("");
   const [actorFilter, setActorFilter] = useState("");
@@ -63,6 +77,15 @@ export default function LogsPage() {
         throw new Error(payload.error ?? "Failed to load audit events");
       }
       setEvents(payload.events ?? []);
+      setPrcLogs(
+        payload.prcLogs ?? {
+          connected: false,
+          joinLogs: [],
+          killLogs: [],
+          commandLogs: [],
+          fetchedAt: null,
+        },
+      );
     } catch (error) {
       if (!silent) {
         setMessage(error instanceof Error ? error.message : "Failed to load audit events");
@@ -151,6 +174,38 @@ export default function LogsPage() {
             ))}
             {!events.length ? <p className="text-[var(--ink-soft)]">No audit events match current filters.</p> : null}
           </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="PRC log retrieval"
+          subtitle="Live join, kill, and command logs from ER:LC."
+          meta={prcLogs.connected ? "Connected" : "Not connected"}
+        >
+          {!prcLogs.connected ? (
+            <p className="text-sm text-[var(--ink-soft)]">Connect ER:LC to retrieve live PRC logs here.</p>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-3">
+              {[
+                { title: "Join logs", items: prcLogs.joinLogs },
+                { title: "Kill logs", items: prcLogs.killLogs },
+                { title: "Command logs", items: prcLogs.commandLogs },
+              ].map((column) => (
+                <div key={column.title} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">{column.title}</p>
+                  <div className="mt-2 space-y-2 text-xs">
+                    {column.items.map((item, index) => (
+                      <div key={`${item.primary}-${index}`} className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-2">
+                        <p className="font-semibold text-sm">{item.primary}</p>
+                        {item.secondary ? <p className="text-[var(--ink-soft)]">{item.secondary}</p> : null}
+                        {item.detail ? <p className="text-[var(--ink-soft)]">{item.detail}</p> : null}
+                      </div>
+                    ))}
+                    {!column.items.length ? <p className="text-[var(--ink-soft)]">No entries.</p> : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CollapsibleSection>
       </section>
     </div>

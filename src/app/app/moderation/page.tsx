@@ -15,6 +15,13 @@ type ModerationCase = {
   createdAt: string;
 };
 
+type LiveModCall = {
+  primary: string;
+  secondary: string | null;
+  detail: string | null;
+  occurredAt: string | null;
+};
+
 type OnlinePlayersResponse = {
   onlinePlayers?: Array<{ id: number; username: string; displayName: string }>;
   error?: string;
@@ -58,14 +65,42 @@ export default function ModerationPage() {
   const [status, setStatus] = useState("Queued");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [prc, setPrc] = useState<{
+    connected: boolean;
+    modCalls: LiveModCall[];
+    openModCalls: number;
+    fetchedAt: string | null;
+  }>({
+    connected: false,
+    modCalls: [],
+    openModCalls: 0,
+    fetchedAt: null,
+  });
 
   const loadCases = useCallback(async () => {
     const response = await fetch("/api/panels/moderation", { cache: "no-store" });
-    const payload = (await response.json().catch(() => ({}))) as { cases?: ModerationCase[]; error?: string };
+    const payload = (await response.json().catch(() => ({}))) as {
+      cases?: ModerationCase[];
+      prc?: {
+        connected: boolean;
+        modCalls: LiveModCall[];
+        openModCalls: number;
+        fetchedAt: string | null;
+      };
+      error?: string;
+    };
     if (!response.ok) {
       throw new Error(payload.error ?? "Failed to load moderation cases");
     }
     setCases(payload.cases ?? []);
+    setPrc(
+      payload.prc ?? {
+        connected: false,
+        modCalls: [],
+        openModCalls: 0,
+        fetchedAt: null,
+      },
+    );
   }, []);
 
   const loadOnlinePlayers = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
@@ -168,6 +203,28 @@ export default function ModerationPage() {
       {message ? <p className="mt-3 text-sm text-[var(--ink-soft)]">{message}</p> : null}
 
       <section className="mt-5 space-y-3">
+        <CollapsibleSection
+          title="Live PRC mod calls"
+          subtitle="Incoming in-game player reports from ER:LC."
+          meta={prc.connected ? `${prc.openModCalls} active` : "Not connected"}
+        >
+          {!prc.connected ? (
+            <p className="text-sm text-[var(--ink-soft)]">Connect ER:LC to view live mod calls.</p>
+          ) : (
+            <div className="space-y-2 text-sm">
+              {prc.modCalls.map((call, index) => (
+                <div key={`${call.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+                  <p className="font-semibold">{call.primary}</p>
+                  {call.secondary ? <p className="text-[var(--ink-soft)]">Target: {call.secondary}</p> : null}
+                  {call.detail ? <p className="text-[var(--ink-soft)]">{call.detail}</p> : null}
+                  {call.occurredAt ? <p className="text-xs text-[var(--ink-soft)]">{call.occurredAt}</p> : null}
+                </div>
+              ))}
+              {!prc.modCalls.length ? <p className="text-[var(--ink-soft)]">No active mod calls right now.</p> : null}
+            </div>
+          )}
+        </CollapsibleSection>
+
         <CollapsibleSection
           title="Open moderation queue"
           subtitle="Review active cases and resolve when complete."

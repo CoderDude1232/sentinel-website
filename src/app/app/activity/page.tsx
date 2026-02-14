@@ -10,6 +10,17 @@ type ActivityResponse = {
     activeStaffNow: number;
   };
   leaderboard: Array<{ name: string; sessions: number; actions: number; score: string }>;
+  prc?: {
+    connected: boolean;
+    counts: { joins: number; kills: number; commands: number; vehicles: number };
+    recent: {
+      joins: Array<{ primary: string; secondary: string | null; detail: string | null; occurredAt: string | null }>;
+      kills: Array<{ primary: string; secondary: string | null; detail: string | null; occurredAt: string | null }>;
+      commands: Array<{ primary: string; secondary: string | null; detail: string | null; occurredAt: string | null }>;
+    };
+    vehicles: Array<{ owner: string; model: string | null }>;
+    fetchedAt: string | null;
+  };
   error?: string;
 };
 
@@ -108,6 +119,50 @@ export default function ActivityPage() {
             <p className="py-4 text-sm text-[var(--ink-soft)]">No activity entries yet.</p>
           ) : null}
         </div>
+      </section>
+
+      <section className="mt-5 grid gap-4 md:grid-cols-2">
+        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+          <h2 className="text-lg font-semibold tracking-tight">Live PRC telemetry</h2>
+          {!data?.prc?.connected ? (
+            <p className="mt-3 text-sm text-[var(--ink-soft)]">Connect ER:LC to view join/kill/command/vehicle logs.</p>
+          ) : (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
+                <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Join logs</p>
+                <p className="mt-1 text-xl font-semibold">{data.prc.counts.joins}</p>
+              </div>
+              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
+                <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Kill logs</p>
+                <p className="mt-1 text-xl font-semibold">{data.prc.counts.kills}</p>
+              </div>
+              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
+                <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Command logs</p>
+                <p className="mt-1 text-xl font-semibold">{data.prc.counts.commands}</p>
+              </div>
+              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
+                <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Active vehicles</p>
+                <p className="mt-1 text-xl font-semibold">{data.prc.counts.vehicles}</p>
+              </div>
+            </div>
+          )}
+        </article>
+
+        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+          <h2 className="text-lg font-semibold tracking-tight">Recent command logs</h2>
+          <div className="mt-3 space-y-2 text-sm">
+            {(data?.prc?.recent.commands ?? []).map((item, index) => (
+              <div key={`${item.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+                <p className="font-semibold">{item.primary}</p>
+                {item.detail ? <p className="text-[var(--ink-soft)]">{item.detail}</p> : null}
+                {item.occurredAt ? <p className="text-xs text-[var(--ink-soft)]">{item.occurredAt}</p> : null}
+              </div>
+            ))}
+            {!(data?.prc?.recent.commands.length) ? (
+              <p className="text-[var(--ink-soft)]">No PRC command logs available.</p>
+            ) : null}
+          </div>
+        </article>
       </section>
     </div>
   );

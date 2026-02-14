@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
+import { fetchErlcBans } from "@/lib/erlc-api";
+import { getUserErlcKey } from "@/lib/erlc-store";
+import { parseGenericLogItems } from "@/lib/erlc-normalize";
 import { addInfraction, createAlert, ensureWorkspaceSeed, getInfractions } from "@/lib/workspace-store";
 import { verifyRobloxUsername } from "@/lib/roblox-api";
 import {
@@ -21,14 +24,21 @@ export async function GET(request: NextRequest) {
 
   try {
     await ensureWorkspaceSeed(user);
-    const [data, policy] = await Promise.all([
+    const [data, policy, erlcKey] = await Promise.all([
       getInfractions(user.id),
       getInfractionPolicy(user.id),
+      getUserErlcKey(user.id),
     ]);
     const totalPoints = data.cases.reduce(
       (sum, item) => sum + pointsForInfractionLevel(item.level, policy),
       0,
     );
+
+    let liveBans: Array<{ primary: string; secondary: string | null; detail: string | null; occurredAt: string | null }> = [];
+    if (erlcKey) {
+      const bansResponse = await fetchErlcBans(erlcKey.serverKey);
+      liveBans = parseGenericLogItems(bansResponse.data).slice(0, 20);
+    }
 
     return NextResponse.json({
       ...data,
@@ -36,6 +46,12 @@ export async function GET(request: NextRequest) {
       totals: {
         cases: data.cases.length,
         points: totalPoints,
+      },
+      prc: {
+        connected: Boolean(erlcKey),
+        activeBans: liveBans.length,
+        bans: liveBans,
+        fetchedAt: erlcKey ? new Date().toISOString() : null,
       },
     });
   } catch (error) {

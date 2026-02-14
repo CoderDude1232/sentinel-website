@@ -27,6 +27,12 @@ type InfractionData = {
   }>;
   policy: InfractionPolicy;
   totals: { cases: number; points: number };
+  prc?: {
+    connected: boolean;
+    activeBans: number;
+    bans: Array<{ primary: string; secondary: string | null; detail: string | null; occurredAt: string | null }>;
+    fetchedAt: string | null;
+  };
   error?: string;
 };
 
@@ -308,6 +314,27 @@ export default function InfractionsPage() {
               </article>
             ))}
           </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Live PRC bans"
+          subtitle="Active in-game bans returned by ER:LC API."
+          meta={data.prc?.connected ? `${data.prc.activeBans} active` : "Not connected"}
+        >
+          {!data.prc?.connected ? (
+            <p className="text-sm text-[var(--ink-soft)]">Connect ER:LC to sync live ban records.</p>
+          ) : (
+            <div className="space-y-2 text-sm">
+              {data.prc.bans.map((item, index) => (
+                <div key={`${item.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
+                  <p className="font-semibold">{item.primary}</p>
+                  {item.detail ? <p className="text-[var(--ink-soft)]">{item.detail}</p> : null}
+                  {item.occurredAt ? <p className="text-xs text-[var(--ink-soft)]">{item.occurredAt}</p> : null}
+                </div>
+              ))}
+              {!data.prc.bans.length ? <p className="text-[var(--ink-soft)]">No active bans returned by PRC.</p> : null}
+            </div>
+          )}
         </CollapsibleSection>
 
         <CollapsibleSection

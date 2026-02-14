@@ -93,6 +93,34 @@ export async function fetchErlcPlayers(serverKey: string): Promise<ErlcRequestRe
   return request("/server/players", serverKey);
 }
 
+export async function fetchErlcJoinLogs(serverKey: string): Promise<ErlcRequestResult> {
+  return request("/server/joinlogs", serverKey);
+}
+
+export async function fetchErlcKillLogs(serverKey: string): Promise<ErlcRequestResult> {
+  return request("/server/killlogs", serverKey);
+}
+
+export async function fetchErlcCommandLogs(serverKey: string): Promise<ErlcRequestResult> {
+  return request("/server/commandlogs", serverKey);
+}
+
+export async function fetchErlcModCalls(serverKey: string): Promise<ErlcRequestResult> {
+  return request("/server/modcalls", serverKey);
+}
+
+export async function fetchErlcBans(serverKey: string): Promise<ErlcRequestResult> {
+  return request("/server/bans", serverKey);
+}
+
+export async function fetchErlcVehicles(serverKey: string): Promise<ErlcRequestResult> {
+  return request("/server/vehicles", serverKey);
+}
+
+export async function fetchErlcStaff(serverKey: string): Promise<ErlcRequestResult> {
+  return request("/server/staff", serverKey);
+}
+
 export async function runErlcCommand(serverKey: string, command: string): Promise<ErlcRequestResult> {
   const startedAt = Date.now();
   const firstResponse = await fetch(`${ERLC_API_BASE}/server/command`, {
