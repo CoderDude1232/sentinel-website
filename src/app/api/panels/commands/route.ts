@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
-import { fetchErlcPlayers, fetchErlcServerSnapshot } from "@/lib/erlc-api";
+import { fetchErlcPlayers, fetchErlcServerSnapshot, runErlcCommand } from "@/lib/erlc-api";
 import { getUserErlcKey } from "@/lib/erlc-store";
 import { verifyRobloxUsernames } from "@/lib/roblox-api";
 import {
@@ -101,6 +101,36 @@ function inferQueueCount(queuePayload: unknown): number | null {
     (Array.isArray(record.data) ? record.data : null) ??
     (Array.isArray(record.Data) ? record.Data : null);
   return queueArray ? queueArray.length : null;
+}
+
+function inferApiError(payload: unknown): string | null {
+  if (typeof payload === "string") {
+    const text = payload.trim();
+    return text || null;
+  }
+  const record = asObject(payload);
+  return (
+    asString(record?.error) ??
+    asString(record?.message) ??
+    asString(record?.Error) ??
+    asString(record?.Message)
+  );
+}
+
+function buildErlcCommandText(input: {
+  command: string;
+  targetPlayer: string;
+  isGlobalTarget: boolean;
+  notes: string | null;
+}): string {
+  const segments = [input.command.trim()];
+  if (!input.isGlobalTarget) {
+    segments.push(input.targetPlayer.trim());
+  }
+  if (input.notes?.trim()) {
+    segments.push(input.notes.trim());
+  }
+  return segments.filter(Boolean).join(" ");
 }
 
 export async function GET(request: NextRequest) {
@@ -317,23 +347,96 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const executionNotes = body.notes?.trim() || null;
+
+    if (policy.requiresApproval) {
+      const queued = await createCommandExecution({
+        userId: user.id,
+        command,
+        targetPlayer: resolvedTarget,
+        actor: user.displayName,
+        result: "Queued",
+        notes: executionNotes,
+      });
+
+      await createAuditEvent({
+        userId: user.id,
+        module: "commands",
+        action: "command.queued",
+        actor: user.displayName,
+        subject: resolvedTarget,
+        afterState: queued,
+        metadata: { global: isGlobalTarget },
+      });
+
+      return NextResponse.json({ execution: queued }, { status: 201 });
+    }
+
+    const commandText = buildErlcCommandText({
+      command,
+      targetPlayer,
+      isGlobalTarget,
+      notes: executionNotes,
+    });
+    const commandDispatch = await runErlcCommand(erlcKey.serverKey, commandText);
+
+    if (!commandDispatch.ok) {
+      const reason =
+        inferApiError(commandDispatch.data) ??
+        (commandDispatch.status === 422
+          ? "ER:LC rejected command syntax or context (for example, invalid target/arguments)."
+          : "ER:LC rejected this command.");
+      const blocked = await createCommandExecution({
+        userId: user.id,
+        command,
+        targetPlayer: resolvedTarget,
+        actor: user.displayName,
+        result: "Blocked",
+        notes: reason,
+      });
+
+      await createAuditEvent({
+        userId: user.id,
+        module: "commands",
+        action: "command.blocked",
+        actor: user.displayName,
+        subject: resolvedTarget,
+        afterState: blocked,
+        metadata: {
+          reason: "erlc_rejected",
+          global: isGlobalTarget,
+          status: commandDispatch.status,
+          commandText,
+        },
+      });
+
+      return NextResponse.json(
+        { error: `ER:LC rejected command: ${reason}`, execution: blocked },
+        { status: 400 },
+      );
+    }
+
     const execution = await createCommandExecution({
       userId: user.id,
       command,
       targetPlayer: resolvedTarget,
       actor: user.displayName,
-      result: policy.requiresApproval ? "Queued" : "Executed",
-      notes: body.notes?.trim() || null,
+      result: "Executed",
+      notes: executionNotes,
     });
 
     await createAuditEvent({
       userId: user.id,
       module: "commands",
-      action: policy.requiresApproval ? "command.queued" : "command.executed",
+      action: "command.executed",
       actor: user.displayName,
       subject: resolvedTarget,
       afterState: execution,
-      metadata: { global: isGlobalTarget },
+      metadata: {
+        global: isGlobalTarget,
+        status: commandDispatch.status,
+        commandText,
+      },
     });
 
     return NextResponse.json({ execution }, { status: 201 });
