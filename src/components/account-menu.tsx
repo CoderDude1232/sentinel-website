@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { SessionUser } from "@/lib/session";
 
 type AccountMenuProps = {
@@ -21,7 +22,9 @@ function getInitials(name: string): string {
 }
 
 export function AccountMenu({ user }: AccountMenuProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const initials = useMemo(() => getInitials(user.displayName), [user.displayName]);
 
@@ -48,6 +51,26 @@ export function AccountMenu({ user }: AccountMenuProps) {
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
+
+  async function handleSignOut() {
+    if (signingOut) {
+      return;
+    }
+
+    setSigningOut(true);
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+    } finally {
+      setOpen(false);
+      setSigningOut(false);
+      router.replace("/login");
+      router.refresh();
+    }
+  }
 
   return (
     <div ref={menuRef} className="relative">
@@ -94,12 +117,14 @@ export function AccountMenu({ user }: AccountMenuProps) {
             >
               Account Settings
             </Link>
-            <Link
-              href="/api/auth/logout"
-              className="mt-1 block rounded-md px-2 py-1.5 text-[var(--ink-soft)] hover:bg-[rgba(216,29,56,0.16)] hover:text-[var(--ink-strong)]"
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="mt-1 block w-full rounded-md px-2 py-1.5 text-left text-[var(--ink-soft)] hover:bg-[rgba(216,29,56,0.16)] hover:text-[var(--ink-strong)] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Sign out
-            </Link>
+              {signingOut ? "Signing out..." : "Sign out"}
+            </button>
           </div>
         </div>
       ) : null}
