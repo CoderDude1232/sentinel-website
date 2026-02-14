@@ -83,6 +83,29 @@ export type OnboardingPreferences = {
   enableSessions: boolean;
   enableDepartments: boolean;
   enableAlerts: boolean;
+  enableRbac: boolean;
+  enableTeams: boolean;
+  enableWorkflows: boolean;
+  enableAppeals: boolean;
+  enableAutomation: boolean;
+  enableProfiles: boolean;
+  enableLogs: boolean;
+  enableRealtime: boolean;
+  enableCommands: boolean;
+  enableBackups: boolean;
+  enableApiKeys: boolean;
+  enableObservability: boolean;
+  enableBilling: boolean;
+};
+
+export type FeatureEntry = {
+  id: number;
+  feature: string;
+  title: string;
+  status: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type DashboardSummary = {
@@ -164,6 +187,46 @@ export async function ensureWorkspaceSchema(): Promise<void> {
       enable_sessions BOOLEAN NOT NULL DEFAULT true,
       enable_departments BOOLEAN NOT NULL DEFAULT true,
       enable_alerts BOOLEAN NOT NULL DEFAULT true,
+      enable_rbac BOOLEAN NOT NULL DEFAULT true,
+      enable_teams BOOLEAN NOT NULL DEFAULT true,
+      enable_workflows BOOLEAN NOT NULL DEFAULT true,
+      enable_appeals BOOLEAN NOT NULL DEFAULT true,
+      enable_automation BOOLEAN NOT NULL DEFAULT true,
+      enable_profiles BOOLEAN NOT NULL DEFAULT true,
+      enable_logs BOOLEAN NOT NULL DEFAULT true,
+      enable_realtime BOOLEAN NOT NULL DEFAULT true,
+      enable_commands BOOLEAN NOT NULL DEFAULT true,
+      enable_backups BOOLEAN NOT NULL DEFAULT true,
+      enable_api_keys BOOLEAN NOT NULL DEFAULT true,
+      enable_observability BOOLEAN NOT NULL DEFAULT true,
+      enable_billing BOOLEAN NOT NULL DEFAULT false,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_rbac BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_teams BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_workflows BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_appeals BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_automation BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_profiles BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_logs BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_realtime BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_commands BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_backups BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_api_keys BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_observability BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE onboarding_preferences ADD COLUMN IF NOT EXISTS enable_billing BOOLEAN NOT NULL DEFAULT false;`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS workspace_feature_entries (
+      id BIGSERIAL PRIMARY KEY,
+      discord_user_id TEXT NOT NULL,
+      feature_key TEXT NOT NULL,
+      title TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'Active',
+      payload JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -251,6 +314,7 @@ export async function ensureWorkspaceSchema(): Promise<void> {
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_departments_user_created ON departments (discord_user_id, created_at DESC);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_alerts_user_created ON alerts (discord_user_id, created_at DESC);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_activity_user_created ON activity_events (discord_user_id, created_at DESC);`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_feature_entries_user_feature ON workspace_feature_entries (discord_user_id, feature_key, created_at DESC);`);
 
   global.sentinelWorkspaceSchemaReady = true;
 }
@@ -304,10 +368,23 @@ export async function ensureWorkspaceSeed(user: SessionUser): Promise<void> {
           enable_sessions,
           enable_departments,
           enable_alerts,
+          enable_rbac,
+          enable_teams,
+          enable_workflows,
+          enable_appeals,
+          enable_automation,
+          enable_profiles,
+          enable_logs,
+          enable_realtime,
+          enable_commands,
+          enable_backups,
+          enable_api_keys,
+          enable_observability,
+          enable_billing,
           created_at,
           updated_at
         )
-        VALUES ($1, true, true, true, true, true, true, NOW(), NOW())
+        VALUES ($1, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, NOW(), NOW())
         ON CONFLICT (discord_user_id) DO NOTHING
       `,
       [user.id],
@@ -412,6 +489,27 @@ export async function ensureWorkspaceSeed(user: SessionUser): Promise<void> {
           ($1, $2, 'Infraction', 'Issued INF-301 (Strike)', 210, NOW() - INTERVAL '3 hours')
       `,
       [user.id, user.displayName],
+    );
+
+    await client.query(
+      `
+        INSERT INTO workspace_feature_entries (discord_user_id, feature_key, title, status, payload, created_at, updated_at)
+        VALUES
+          ($1, 'rbac', 'Owner role baseline', 'Active', '{"permissions":["workspace.manage","roles.manage","integrations.manage"]}'::jsonb, NOW(), NOW()),
+          ($1, 'teams', 'Primary team created', 'Active', '{"teamName":"Command Team","members":[{"name":"Owner","role":"Owner"}]}'::jsonb, NOW(), NOW()),
+          ($1, 'workflows', 'Default moderation workflow', 'Active', '{"slaMinutes":15,"escalation":"Owner"}'::jsonb, NOW(), NOW()),
+          ($1, 'appeals', 'Appeals intake enabled', 'Active', '{"reviewWindowHours":48}'::jsonb, NOW(), NOW()),
+          ($1, 'automation', 'Session reminders configured', 'Active', '{"reminders":["30m","10m"],"channel":"staff-ops"}'::jsonb, NOW(), NOW()),
+          ($1, 'profiles', 'Staff profile indexing', 'Active', '{"source":"activity+sessions"}'::jsonb, NOW(), NOW()),
+          ($1, 'logs', 'Command log explorer', 'Active', '{"savedViews":["All Commands"]}'::jsonb, NOW(), NOW()),
+          ($1, 'realtime', 'Realtime channel health', 'Active', '{"transport":"polling","upgrade":"websocket-ready"}'::jsonb, NOW(), NOW()),
+          ($1, 'commands', 'Safe command controls', 'Active', '{"allowlist":[":pm",":announce"]}'::jsonb, NOW(), NOW()),
+          ($1, 'backups', 'Nightly export policy', 'Active', '{"format":"json","frequency":"daily"}'::jsonb, NOW(), NOW()),
+          ($1, 'api_keys', 'Integration API token scope', 'Active', '{"scopes":["read:dashboard","write:alerts"]}'::jsonb, NOW(), NOW()),
+          ($1, 'observability', 'Runtime health checks', 'Active', '{"intervalSeconds":60}'::jsonb, NOW(), NOW()),
+          ($1, 'billing', 'Billing module readiness', 'Planned', '{"status":"reserved","enabled":false}'::jsonb, NOW(), NOW())
+      `,
+      [user.id],
     );
 
     await client.query("COMMIT");
@@ -575,6 +673,19 @@ export async function getOnboardingPreferences(userId: string): Promise<Onboardi
     enable_sessions: boolean;
     enable_departments: boolean;
     enable_alerts: boolean;
+    enable_rbac: boolean;
+    enable_teams: boolean;
+    enable_workflows: boolean;
+    enable_appeals: boolean;
+    enable_automation: boolean;
+    enable_profiles: boolean;
+    enable_logs: boolean;
+    enable_realtime: boolean;
+    enable_commands: boolean;
+    enable_backups: boolean;
+    enable_api_keys: boolean;
+    enable_observability: boolean;
+    enable_billing: boolean;
   }>(
     `
       SELECT
@@ -583,7 +694,20 @@ export async function getOnboardingPreferences(userId: string): Promise<Onboardi
         enable_infractions,
         enable_sessions,
         enable_departments,
-        enable_alerts
+        enable_alerts,
+        enable_rbac,
+        enable_teams,
+        enable_workflows,
+        enable_appeals,
+        enable_automation,
+        enable_profiles,
+        enable_logs,
+        enable_realtime,
+        enable_commands,
+        enable_backups,
+        enable_api_keys,
+        enable_observability,
+        enable_billing
       FROM onboarding_preferences
       WHERE discord_user_id = $1
     `,
@@ -599,6 +723,19 @@ export async function getOnboardingPreferences(userId: string): Promise<Onboardi
       enableSessions: true,
       enableDepartments: true,
       enableAlerts: true,
+      enableRbac: true,
+      enableTeams: true,
+      enableWorkflows: true,
+      enableAppeals: true,
+      enableAutomation: true,
+      enableProfiles: true,
+      enableLogs: true,
+      enableRealtime: true,
+      enableCommands: true,
+      enableBackups: true,
+      enableApiKeys: true,
+      enableObservability: true,
+      enableBilling: false,
     });
     return {
       enableModeration: true,
@@ -607,6 +744,19 @@ export async function getOnboardingPreferences(userId: string): Promise<Onboardi
       enableSessions: true,
       enableDepartments: true,
       enableAlerts: true,
+      enableRbac: true,
+      enableTeams: true,
+      enableWorkflows: true,
+      enableAppeals: true,
+      enableAutomation: true,
+      enableProfiles: true,
+      enableLogs: true,
+      enableRealtime: true,
+      enableCommands: true,
+      enableBackups: true,
+      enableApiKeys: true,
+      enableObservability: true,
+      enableBilling: false,
     };
   }
 
@@ -617,6 +767,19 @@ export async function getOnboardingPreferences(userId: string): Promise<Onboardi
     enableSessions: row.enable_sessions,
     enableDepartments: row.enable_departments,
     enableAlerts: row.enable_alerts,
+    enableRbac: row.enable_rbac,
+    enableTeams: row.enable_teams,
+    enableWorkflows: row.enable_workflows,
+    enableAppeals: row.enable_appeals,
+    enableAutomation: row.enable_automation,
+    enableProfiles: row.enable_profiles,
+    enableLogs: row.enable_logs,
+    enableRealtime: row.enable_realtime,
+    enableCommands: row.enable_commands,
+    enableBackups: row.enable_backups,
+    enableApiKeys: row.enable_api_keys,
+    enableObservability: row.enable_observability,
+    enableBilling: row.enable_billing,
   };
 }
 
@@ -633,6 +796,19 @@ export async function upsertOnboardingPreferences(
     enable_sessions: boolean;
     enable_departments: boolean;
     enable_alerts: boolean;
+    enable_rbac: boolean;
+    enable_teams: boolean;
+    enable_workflows: boolean;
+    enable_appeals: boolean;
+    enable_automation: boolean;
+    enable_profiles: boolean;
+    enable_logs: boolean;
+    enable_realtime: boolean;
+    enable_commands: boolean;
+    enable_backups: boolean;
+    enable_api_keys: boolean;
+    enable_observability: boolean;
+    enable_billing: boolean;
   }>(
     `
       INSERT INTO onboarding_preferences (
@@ -643,10 +819,23 @@ export async function upsertOnboardingPreferences(
         enable_sessions,
         enable_departments,
         enable_alerts,
+        enable_rbac,
+        enable_teams,
+        enable_workflows,
+        enable_appeals,
+        enable_automation,
+        enable_profiles,
+        enable_logs,
+        enable_realtime,
+        enable_commands,
+        enable_backups,
+        enable_api_keys,
+        enable_observability,
+        enable_billing,
         created_at,
         updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW(), NOW())
       ON CONFLICT (discord_user_id)
       DO UPDATE SET
         enable_moderation = EXCLUDED.enable_moderation,
@@ -655,6 +844,19 @@ export async function upsertOnboardingPreferences(
         enable_sessions = EXCLUDED.enable_sessions,
         enable_departments = EXCLUDED.enable_departments,
         enable_alerts = EXCLUDED.enable_alerts,
+        enable_rbac = EXCLUDED.enable_rbac,
+        enable_teams = EXCLUDED.enable_teams,
+        enable_workflows = EXCLUDED.enable_workflows,
+        enable_appeals = EXCLUDED.enable_appeals,
+        enable_automation = EXCLUDED.enable_automation,
+        enable_profiles = EXCLUDED.enable_profiles,
+        enable_logs = EXCLUDED.enable_logs,
+        enable_realtime = EXCLUDED.enable_realtime,
+        enable_commands = EXCLUDED.enable_commands,
+        enable_backups = EXCLUDED.enable_backups,
+        enable_api_keys = EXCLUDED.enable_api_keys,
+        enable_observability = EXCLUDED.enable_observability,
+        enable_billing = EXCLUDED.enable_billing,
         updated_at = NOW()
       RETURNING
         enable_moderation,
@@ -662,7 +864,20 @@ export async function upsertOnboardingPreferences(
         enable_infractions,
         enable_sessions,
         enable_departments,
-        enable_alerts
+        enable_alerts,
+        enable_rbac,
+        enable_teams,
+        enable_workflows,
+        enable_appeals,
+        enable_automation,
+        enable_profiles,
+        enable_logs,
+        enable_realtime,
+        enable_commands,
+        enable_backups,
+        enable_api_keys,
+        enable_observability,
+        enable_billing
     `,
     [
       userId,
@@ -672,6 +887,19 @@ export async function upsertOnboardingPreferences(
       preferences.enableSessions,
       preferences.enableDepartments,
       preferences.enableAlerts,
+      preferences.enableRbac,
+      preferences.enableTeams,
+      preferences.enableWorkflows,
+      preferences.enableAppeals,
+      preferences.enableAutomation,
+      preferences.enableProfiles,
+      preferences.enableLogs,
+      preferences.enableRealtime,
+      preferences.enableCommands,
+      preferences.enableBackups,
+      preferences.enableApiKeys,
+      preferences.enableObservability,
+      preferences.enableBilling,
     ],
   );
 
@@ -683,6 +911,191 @@ export async function upsertOnboardingPreferences(
     enableSessions: row.enable_sessions,
     enableDepartments: row.enable_departments,
     enableAlerts: row.enable_alerts,
+    enableRbac: row.enable_rbac,
+    enableTeams: row.enable_teams,
+    enableWorkflows: row.enable_workflows,
+    enableAppeals: row.enable_appeals,
+    enableAutomation: row.enable_automation,
+    enableProfiles: row.enable_profiles,
+    enableLogs: row.enable_logs,
+    enableRealtime: row.enable_realtime,
+    enableCommands: row.enable_commands,
+    enableBackups: row.enable_backups,
+    enableApiKeys: row.enable_api_keys,
+    enableObservability: row.enable_observability,
+    enableBilling: row.enable_billing,
+  };
+}
+
+const FEATURE_KEY_ALLOWLIST = new Set([
+  "rbac",
+  "teams",
+  "workflows",
+  "appeals",
+  "automation",
+  "profiles",
+  "logs",
+  "realtime",
+  "commands",
+  "backups",
+  "api_keys",
+  "observability",
+  "billing",
+]);
+
+export function isSupportedFeatureKey(featureKey: string): boolean {
+  return FEATURE_KEY_ALLOWLIST.has(featureKey);
+}
+
+export async function listFeatureEntries(userId: string, featureKey: string): Promise<FeatureEntry[]> {
+  await ensureWorkspaceSchema();
+  const pool = getDbPool();
+  const result = await pool.query<{
+    id: string;
+    feature_key: string;
+    title: string;
+    status: string;
+    payload: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+  }>(
+    `
+      SELECT id, feature_key, title, status, payload, created_at, updated_at
+      FROM workspace_feature_entries
+      WHERE discord_user_id = $1 AND feature_key = $2
+      ORDER BY updated_at DESC
+      LIMIT 200
+    `,
+    [userId, featureKey],
+  );
+
+  return result.rows.map((row) => ({
+    id: Number(row.id),
+    feature: row.feature_key,
+    title: row.title,
+    status: row.status,
+    payload: row.payload ?? {},
+    createdAt: toIso(row.created_at),
+    updatedAt: toIso(row.updated_at),
+  }));
+}
+
+export async function createFeatureEntry(input: {
+  userId: string;
+  featureKey: string;
+  title: string;
+  status?: string;
+  payload?: Record<string, unknown>;
+}): Promise<FeatureEntry> {
+  await ensureWorkspaceSchema();
+  const pool = getDbPool();
+  const result = await pool.query<{
+    id: string;
+    feature_key: string;
+    title: string;
+    status: string;
+    payload: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+  }>(
+    `
+      INSERT INTO workspace_feature_entries (
+        discord_user_id,
+        feature_key,
+        title,
+        status,
+        payload,
+        created_at,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5::jsonb, NOW(), NOW())
+      RETURNING id, feature_key, title, status, payload, created_at, updated_at
+    `,
+    [
+      input.userId,
+      input.featureKey,
+      input.title.trim(),
+      input.status?.trim() || "Active",
+      JSON.stringify(input.payload ?? {}),
+    ],
+  );
+
+  const row = result.rows[0];
+  await createActivityEvent({
+    userId: input.userId,
+    actor: "System",
+    eventType: "Feature",
+    context: `Created ${input.featureKey} entry: ${row.title}`,
+  });
+
+  return {
+    id: Number(row.id),
+    feature: row.feature_key,
+    title: row.title,
+    status: row.status,
+    payload: row.payload ?? {},
+    createdAt: toIso(row.created_at),
+    updatedAt: toIso(row.updated_at),
+  };
+}
+
+export async function updateFeatureEntry(input: {
+  userId: string;
+  id: number;
+  title?: string;
+  status?: string;
+  payload?: Record<string, unknown>;
+}): Promise<FeatureEntry | null> {
+  await ensureWorkspaceSchema();
+  const pool = getDbPool();
+  const result = await pool.query<{
+    id: string;
+    feature_key: string;
+    title: string;
+    status: string;
+    payload: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+  }>(
+    `
+      UPDATE workspace_feature_entries
+      SET
+        title = COALESCE(NULLIF($3, ''), title),
+        status = COALESCE(NULLIF($4, ''), status),
+        payload = COALESCE($5::jsonb, payload),
+        updated_at = NOW()
+      WHERE discord_user_id = $1 AND id = $2
+      RETURNING id, feature_key, title, status, payload, created_at, updated_at
+    `,
+    [
+      input.userId,
+      input.id,
+      input.title?.trim() ?? "",
+      input.status?.trim() ?? "",
+      input.payload ? JSON.stringify(input.payload) : null,
+    ],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    return null;
+  }
+
+  await createActivityEvent({
+    userId: input.userId,
+    actor: "System",
+    eventType: "Feature",
+    context: `Updated ${row.feature_key} entry: ${row.title}`,
+  });
+
+  return {
+    id: Number(row.id),
+    feature: row.feature_key,
+    title: row.title,
+    status: row.status,
+    payload: row.payload ?? {},
+    createdAt: toIso(row.created_at),
+    updatedAt: toIso(row.updated_at),
   };
 }
 

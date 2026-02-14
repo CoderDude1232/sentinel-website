@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       erlcConnected: Boolean(erlcKey),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to save onboarding preferences";
+    const message = error instanceof Error ? error.message : "Failed to load onboarding summary";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -97,9 +97,13 @@ export async function PUT(request: NextRequest) {
 
   try {
     await ensureWorkspaceSeed(user);
+    const currentPreferences = await getOnboardingPreferences(user.id);
     const currentSettings = await getWorkspaceSettings(user.id);
     const [savedPreferences, settings] = await Promise.all([
-      upsertOnboardingPreferences(user.id, preferences),
+      upsertOnboardingPreferences(user.id, {
+        ...currentPreferences,
+        ...preferences,
+      }),
       upsertWorkspaceSettings(user.id, {
         retentionDays: body.retentionDays === 30 ? 30 : 90,
         webhookUrl:
@@ -128,7 +132,7 @@ export async function PUT(request: NextRequest) {
       steps,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to load onboarding summary";
+    const message = error instanceof Error ? error.message : "Failed to save onboarding preferences";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -15,6 +15,19 @@ type SettingsState = {
     enableSessions: boolean;
     enableDepartments: boolean;
     enableAlerts: boolean;
+    enableRbac: boolean;
+    enableTeams: boolean;
+    enableWorkflows: boolean;
+    enableAppeals: boolean;
+    enableAutomation: boolean;
+    enableProfiles: boolean;
+    enableLogs: boolean;
+    enableRealtime: boolean;
+    enableCommands: boolean;
+    enableBackups: boolean;
+    enableApiKeys: boolean;
+    enableObservability: boolean;
+    enableBilling: boolean;
   };
   error?: string;
 };
@@ -33,6 +46,19 @@ export default function SettingsPage() {
       enableSessions: true,
       enableDepartments: true,
       enableAlerts: true,
+      enableRbac: true,
+      enableTeams: true,
+      enableWorkflows: true,
+      enableAppeals: true,
+      enableAutomation: true,
+      enableProfiles: true,
+      enableLogs: true,
+      enableRealtime: true,
+      enableCommands: true,
+      enableBackups: true,
+      enableApiKeys: true,
+      enableObservability: true,
+      enableBilling: false,
     },
   });
   const [loading, setLoading] = useState(false);
@@ -171,6 +197,19 @@ export default function SettingsPage() {
               ["enableSessions", "Sessions"],
               ["enableDepartments", "Departments"],
               ["enableAlerts", "Alerts"],
+              ["enableRbac", "RBAC"],
+              ["enableTeams", "Teams"],
+              ["enableWorkflows", "Workflows"],
+              ["enableAppeals", "Appeals"],
+              ["enableAutomation", "Automation"],
+              ["enableProfiles", "Profiles"],
+              ["enableLogs", "Logs"],
+              ["enableRealtime", "Realtime"],
+              ["enableCommands", "Commands"],
+              ["enableBackups", "Backups"],
+              ["enableApiKeys", "API Keys"],
+              ["enableObservability", "Observability"],
+              ["enableBilling", "Billing (Optional)"],
             ].map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm">
                 <input
