@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { AmbientBackdrop } from "@/components/ambient-backdrop";
+import { DevtoolsGuard } from "@/components/devtools-guard";
 import { GlobalNavbar } from "@/components/global-navbar";
 import "./globals.css";
 
@@ -67,6 +68,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="surface-shell antialiased">
+        <DevtoolsGuard />
         <AmbientBackdrop />
         <GlobalNavbar />
         {children}

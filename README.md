@@ -19,6 +19,7 @@ Sentinel is an ER:LC operations platform with modules for moderation, activity, 
    - `DISCORD_REDIRECT_URI`
    - `DISCORD_BOT_TOKEN` (for bot delivery)
    - `DISCORD_BOT_CLIENT_ID` (optional, defaults to `DISCORD_CLIENT_ID`)
+   - `NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED` (optional, production default is enabled)
    - `DATABASE_URL`
    - `APP_ENCRYPTION_KEY`
    - `SESSION_SECRET`
