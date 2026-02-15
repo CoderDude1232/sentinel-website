@@ -1,6 +1,45 @@
 import Image from "next/image";
 import Link from "next/link";
 
+const LANDING_CARDS: Array<{ src: string; alt: string; label: string; title: string }> = [
+  {
+    src: "/cinematic1.png",
+    alt: "Sentinel cinematic scene one",
+    label: "Moderation View",
+    title: "Live oversight in active situations",
+  },
+  {
+    src: "/cinematic2.png",
+    alt: "Sentinel cinematic scene two",
+    label: "Activity Command",
+    title: "Track staff performance and outcomes",
+  },
+  {
+    src: "/cinematic3.png",
+    alt: "Sentinel cinematic scene three",
+    label: "Infraction Control",
+    title: "Document actions with clear timelines",
+  },
+  {
+    src: "/cinematic4.png",
+    alt: "Sentinel cinematic scene four",
+    label: "Session Board",
+    title: "Coordinate turnout and monitor impact",
+  },
+  {
+    src: "/cinematic5.png",
+    alt: "Sentinel cinematic scene five",
+    label: "Department Ops",
+    title: "Organize teams with role clarity",
+  },
+  {
+    src: "/cinematic6.png",
+    alt: "Sentinel cinematic scene six",
+    label: "Alert Relay",
+    title: "Push critical updates across channels",
+  },
+];
+
 export default function Home() {
   return (
     <main className="mx-auto w-full max-w-7xl px-5 sm:px-8">
@@ -51,42 +90,34 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto mb-16 mt-2 grid w-full max-w-6xl gap-6 md:grid-cols-2">
-        <article className="cinematic-card">
-          <Image
-            src="/cinematic1.png"
-            alt="Sentinel cinematic scene one"
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 50vw"
-            priority={false}
-          />
-          <div className="cinematic-overlay" />
-          <div className="cinematic-caption">
-            <p className="text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">
-              Moderation View
-            </p>
-            <p className="mt-1 text-base font-semibold">Live oversight in active situations</p>
-          </div>
-        </article>
-
-        <article className="cinematic-card">
-          <Image
-            src="/cinematic2.png"
-            alt="Sentinel cinematic scene two"
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 50vw"
-            priority={false}
-          />
-          <div className="cinematic-overlay" />
-          <div className="cinematic-caption">
-            <p className="text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">
-              Activity Command
-            </p>
-            <p className="mt-1 text-base font-semibold">Track staff performance and outcomes</p>
-          </div>
-        </article>
+      <section className="mx-auto mb-16 mt-2 w-full max-w-6xl">
+        <div className="mb-4 px-1">
+          <p className="kicker">Cinematics</p>
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">
+            Operational visuals from core Sentinel modules.
+          </p>
+        </div>
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {LANDING_CARDS.map((card) => (
+            <article key={card.src} className="cinematic-card">
+              <Image
+                src={card.src}
+                alt={card.alt}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority={false}
+              />
+              <div className="cinematic-overlay" />
+              <div className="cinematic-caption">
+                <p className="text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">
+                  {card.label}
+                </p>
+                <p className="mt-1 text-base font-semibold">{card.title}</p>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
     </main>
   );
