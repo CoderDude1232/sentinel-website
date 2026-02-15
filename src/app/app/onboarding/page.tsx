@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { UiSelect } from "@/components/ui-select";
 
 type OnboardingResponse = {
-  steps: Array<{ step: string; status: "Complete" | "In progress" | "Pending"; detail: string }>;
+  steps?: Array<{ step: string; status: "Complete" | "In progress" | "Pending"; detail: string }>;
   preferences: {
     enableModeration: boolean;
     enableActivity: boolean;
@@ -24,7 +24,6 @@ type OnboardingResponse = {
 };
 
 export default function OnboardingPage() {
-  const [steps, setSteps] = useState<OnboardingResponse["steps"]>([]);
   const [preferences, setPreferences] = useState<OnboardingResponse["preferences"]>({
     enableModeration: true,
     enableActivity: true,
@@ -49,7 +48,6 @@ export default function OnboardingPage() {
     if (!response.ok) {
       throw new Error(payload.error ?? "Failed to load onboarding flow");
     }
-    setSteps(payload.steps ?? []);
     if (payload.preferences) {
       setPreferences(payload.preferences);
     }
@@ -89,7 +87,6 @@ export default function OnboardingPage() {
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to save onboarding preferences");
       }
-      setSteps(payload.steps ?? []);
       setErlcConnected(Boolean(payload.erlcConnected));
       setMessage("Onboarding preferences saved.");
     } catch (error) {
@@ -146,7 +143,7 @@ export default function OnboardingPage() {
             Refresh setup
           </button>
           <button onClick={() => void saveOnboarding()} className="button-primary px-4 py-2 text-sm" type="button" disabled={saving}>
-            {saving ? "Saving..." : "Save onboarding"}
+            {saving ? "Continuing..." : "Continue onboarding"}
           </button>
         </div>
       </div>
@@ -243,24 +240,6 @@ export default function OnboardingPage() {
         </div>
       </section>
 
-      <div className="mt-5 space-y-3">
-        {steps.map((item, index) => (
-          <article
-            key={item.step}
-            className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold tracking-tight">
-                {index + 1}. {item.step}
-              </h2>
-              <span className="rounded-full border border-[var(--line)] px-2 py-0.5 text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
-                {item.status}
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-[var(--ink-soft)]">{item.detail}</p>
-          </article>
-        ))}
-      </div>
     </div>
   );
 }
