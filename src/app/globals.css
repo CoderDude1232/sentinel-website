@@ -225,6 +225,10 @@ body {
   transition: border-color 130ms ease, box-shadow 130ms ease, background-color 130ms ease;
 }
 
+.ui-dropdown-trigger .ui-option-row {
+  min-width: 0;
+}
+
 .ui-dropdown-trigger:hover {
   background: rgba(255, 255, 255, 0.04);
 }
@@ -281,6 +285,43 @@ body {
   text-align: left;
   font-size: 0.9rem;
   transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.ui-option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ui-option-avatar {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+
+.ui-option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ui-option-label {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui-option-meta {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ui-dropdown-option:hover {

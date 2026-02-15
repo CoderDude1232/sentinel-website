@@ -37,7 +37,7 @@ type InfractionData = {
 };
 
 type OnlinePlayersResponse = {
-  onlinePlayers?: Array<{ id: number; username: string; displayName: string }>;
+  onlinePlayers?: Array<{ id: number; username: string; displayName: string; avatarUrl: string | null }>;
   error?: string;
 };
 
@@ -66,7 +66,7 @@ export default function InfractionsPage() {
     totals: { cases: 0, points: 0 },
   });
   const [targetSource, setTargetSource] = useState<"online" | "offline">("online");
-  const [onlinePlayers, setOnlinePlayers] = useState<Array<{ id: number; username: string; displayName: string }>>([]);
+  const [onlinePlayers, setOnlinePlayers] = useState<Array<{ id: number; username: string; displayName: string; avatarUrl: string | null }>>([]);
   const [selectedOnlineTarget, setSelectedOnlineTarget] = useState("");
   const [offlineTarget, setOfflineTarget] = useState("");
   const [playersLoading, setPlayersLoading] = useState(false);
@@ -377,7 +377,9 @@ export default function InfractionsPage() {
                       onChange={(value) => setSelectedOnlineTarget(value)}
                       options={onlinePlayers.map((playerEntry) => ({
                         value: playerEntry.username,
-                        label: `${playerEntry.username} (${playerEntry.displayName})`,
+                        label: playerEntry.username,
+                        description: playerEntry.displayName,
+                        avatarUrl: playerEntry.avatarUrl,
                       }))}
                     />
                   ) : (

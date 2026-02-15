@@ -22,10 +22,18 @@ type CommandExecutionRecord = {
   createdAt: string;
 };
 
+type RobloxPlayer = {
+  id: number;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+};
+
 type CommandsResponse = {
   policy: CommandPolicy;
   executions: CommandExecutionRecord[];
-  onlinePlayers: Array<{ id: number; username: string; displayName: string }>;
+  onlinePlayers: RobloxPlayer[];
+  loggedPlayers?: RobloxPlayer[];
   live: {
     connected: boolean;
     serverName: string | null;
@@ -50,6 +58,7 @@ export default function CommandsPage() {
   const [policy, setPolicy] = useState<CommandPolicy>(defaultPolicy);
   const [executions, setExecutions] = useState<CommandExecutionRecord[]>([]);
   const [onlinePlayers, setOnlinePlayers] = useState<CommandsResponse["onlinePlayers"]>([]);
+  const [loggedPlayers, setLoggedPlayers] = useState<RobloxPlayer[]>([]);
   const [live, setLive] = useState<CommandsResponse["live"]>({
     connected: false,
     serverName: null,
@@ -74,11 +83,22 @@ export default function CommandsPage() {
       { value: "", label: "Global command (no player target)" },
       ...onlinePlayers.map((player) => ({
         value: player.username,
-        label: `${player.username} (${player.displayName})`,
+        label: player.username,
+        description: player.displayName,
+        avatarUrl: player.avatarUrl,
       })),
     ],
     [onlinePlayers],
   );
+
+  const playerDirectory = useMemo(() => {
+    const combined = [...onlinePlayers, ...loggedPlayers];
+    const map = new Map<string, RobloxPlayer>();
+    for (const player of combined) {
+      map.set(player.username.toLowerCase(), player);
+    }
+    return map;
+  }, [loggedPlayers, onlinePlayers]);
 
   const visibleExecutions = useMemo(
     () => executions.slice(0, EXECUTION_DISPLAY_LIMIT),
@@ -101,6 +121,7 @@ export default function CommandsPage() {
     setAllowlistInput(payload.policy.allowlist.join(", "));
     setExecutions(payload.executions ?? []);
     setOnlinePlayers(payload.onlinePlayers ?? []);
+    setLoggedPlayers(payload.loggedPlayers ?? []);
     setLive(payload.live);
 
     const nextCommand = payload.policy.allowlist[0] ?? "";
@@ -122,6 +143,7 @@ export default function CommandsPage() {
 
       const players = payload.onlinePlayers ?? [];
       setOnlinePlayers(players);
+      setLoggedPlayers(payload.loggedPlayers ?? []);
       setLive(payload.live);
       setTargetPlayer((current) =>
         current && players.some((player) => player.username === current) ? current : "",
@@ -356,10 +378,20 @@ export default function CommandsPage() {
             </p>
           ) : null}
           <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1 text-sm">
-            {visibleExecutions.map((entry) => (
+            {visibleExecutions.map((entry) => {
+              const isGlobal = entry.targetPlayer === "GLOBAL";
+              const target = isGlobal ? null : playerDirectory.get(entry.targetPlayer.toLowerCase()) ?? null;
+              return (
               <div key={entry.id.toString()} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold">{entry.command} ? {entry.targetPlayer === "GLOBAL" ? "Global" : entry.targetPlayer}</p>
+                  <p className="flex items-center gap-2 font-semibold">
+                    {!isGlobal && target?.avatarUrl ? (
+                      <img src={target.avatarUrl} alt="" className="h-6 w-6 rounded-full border border-[var(--line)]" />
+                    ) : null}
+                    <span>
+                      {entry.command} ? {isGlobal ? "Global" : target?.username ?? entry.targetPlayer}
+                    </span>
+                  </p>
                   <span className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
                     {entry.result}
                   </span>
@@ -369,7 +401,8 @@ export default function CommandsPage() {
                 </p>
                 {entry.notes ? <p className="mt-1 text-xs text-[var(--ink-soft)]">{entry.notes}</p> : null}
               </div>
-            ))}
+              );
+            })}
             {!executions.length ? <p className="text-[var(--ink-soft)]">No command submissions yet.</p> : null}
           </div>
         </CollapsibleSection>

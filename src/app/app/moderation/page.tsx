@@ -23,7 +23,7 @@ type LiveModCall = {
 };
 
 type OnlinePlayersResponse = {
-  onlinePlayers?: Array<{ id: number; username: string; displayName: string }>;
+  onlinePlayers?: Array<{ id: number; username: string; displayName: string; avatarUrl: string | null }>;
   error?: string;
 };
 
@@ -70,7 +70,7 @@ export default function ModerationPage() {
   const [cases, setCases] = useState<ModerationCase[]>([]);
   const [type, setType] = useState("Mod Call");
   const [playerSource, setPlayerSource] = useState<"online" | "offline">("online");
-  const [onlinePlayers, setOnlinePlayers] = useState<Array<{ id: number; username: string; displayName: string }>>([]);
+  const [onlinePlayers, setOnlinePlayers] = useState<Array<{ id: number; username: string; displayName: string; avatarUrl: string | null }>>([]);
   const [selectedOnlinePlayer, setSelectedOnlinePlayer] = useState("");
   const [offlinePlayer, setOfflinePlayer] = useState("");
   const [playersLoading, setPlayersLoading] = useState(false);
@@ -426,7 +426,9 @@ export default function ModerationPage() {
                       onChange={(value) => setSelectedOnlinePlayer(value)}
                       options={onlinePlayers.map((playerEntry) => ({
                         value: playerEntry.username,
-                        label: `${playerEntry.username} (${playerEntry.displayName})`,
+                        label: playerEntry.username,
+                        description: playerEntry.displayName,
+                        avatarUrl: playerEntry.avatarUrl,
                       }))}
                     />
                   ) : (

@@ -113,6 +113,7 @@ export async function GET(request: NextRequest) {
         id: identity.id,
         username: identity.name,
         displayName: identity.displayName,
+        avatarUrl: identity.avatarUrl,
       }))
       .sort((a, b) => a.username.localeCompare(b.username));
 
@@ -127,4 +128,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

@@ -48,7 +48,7 @@ type ErlcSnapshot = {
 };
 
 type OnlinePlayersResponse = {
-  onlinePlayers?: Array<{ id: number; username: string; displayName: string }>;
+  onlinePlayers?: Array<{ id: number; username: string; displayName: string; avatarUrl: string | null }>;
   error?: string;
 };
 
@@ -168,7 +168,7 @@ export function AdvancedFeaturePanel({
   const [offlineSubject, setOfflineSubject] = useState("");
   const [includeLiveContext, setIncludeLiveContext] = useState(true);
   const [erlcSnapshot, setErlcSnapshot] = useState<ErlcSnapshot | null>(null);
-  const [onlinePlayers, setOnlinePlayers] = useState<Array<{ id: number; username: string; displayName: string }>>([]);
+  const [onlinePlayers, setOnlinePlayers] = useState<Array<{ id: number; username: string; displayName: string; avatarUrl: string | null }>>([]);
   const [loading, setLoading] = useState(false);
   const [loadingLive, setLoadingLive] = useState(false);
   const [message, setMessage] = useState("");
@@ -421,7 +421,9 @@ export function AdvancedFeaturePanel({
                   onlinePlayers.length
                     ? onlinePlayers.map((player) => ({
                         value: player.username,
-                        label: `${player.username} (${player.displayName})`,
+                        label: player.username,
+                        description: player.displayName,
+                        avatarUrl: player.avatarUrl,
                       }))
                     : [{ value: "", label: "No online players" }]
                 }

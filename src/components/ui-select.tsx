@@ -7,6 +7,8 @@ type SelectValue = string | number;
 export type SelectOption<T extends SelectValue> = {
   label: string;
   value: T;
+  avatarUrl?: string | null;
+  description?: string;
 };
 
 type UiSelectProps<T extends SelectValue> = {
@@ -65,7 +67,21 @@ export function UiSelect<T extends SelectValue>({
         onClick={() => setOpen((prev) => !prev)}
         className="ui-dropdown-trigger"
       >
-        <span>{selectedOption?.label ?? "Select an option"}</span>
+        {selectedOption ? (
+          <span className="ui-option-row">
+            {selectedOption.avatarUrl ? (
+              <img src={selectedOption.avatarUrl} alt="" className="ui-option-avatar" />
+            ) : null}
+            <span className="ui-option-text">
+              <span className="ui-option-label">{selectedOption.label}</span>
+              {selectedOption.description ? (
+                <span className="ui-option-meta">{selectedOption.description}</span>
+              ) : null}
+            </span>
+          </span>
+        ) : (
+          <span>Select an option</span>
+        )}
         <span aria-hidden className={`ui-dropdown-chevron${open ? " open" : ""}`}>
           <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -89,7 +105,15 @@ export function UiSelect<T extends SelectValue>({
                   setOpen(false);
                 }}
               >
-                {option.label}
+                <span className="ui-option-row">
+                  {option.avatarUrl ? (
+                    <img src={option.avatarUrl} alt="" className="ui-option-avatar" />
+                  ) : null}
+                  <span className="ui-option-text">
+                    <span className="ui-option-label">{option.label}</span>
+                    {option.description ? <span className="ui-option-meta">{option.description}</span> : null}
+                  </span>
+                </span>
               </button>
             );
           })}
@@ -98,4 +122,3 @@ export function UiSelect<T extends SelectValue>({
     </div>
   );
 }
-

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
 import { fetchErlcPlayers, fetchErlcServerSnapshot, runErlcCommand } from "@/lib/erlc-api";
 import { getUserErlcKey } from "@/lib/erlc-store";
-import { verifyRobloxUsernames } from "@/lib/roblox-api";
+import { type RobloxIdentity, verifyRobloxUsernames } from "@/lib/roblox-api";
 import {
   createAuditEvent,
   createCommandExecution,
@@ -147,6 +147,14 @@ function wait(ms: number): Promise<void> {
   });
 }
 
+async function safeVerifyRobloxUsernames(usernames: string[]): Promise<Map<string, RobloxIdentity>> {
+  try {
+    return await verifyRobloxUsernames(usernames);
+  } catch {
+    return new Map();
+  }
+}
+
 function buildErlcCommandText(input: {
   command: string;
   targetPlayer: string;
@@ -182,9 +190,33 @@ export async function GET(request: NextRequest) {
     ]);
 
     if (!erlcKey) {
+      const executionTargets = Array.from(
+        new Set(
+          executions
+            .map((entry) => entry.targetPlayer)
+            .filter((entry) => entry && entry !== "GLOBAL"),
+        ),
+      );
+      const verifiedTargets = await safeVerifyRobloxUsernames(executionTargets);
+      const loggedPlayers = Array.from(
+        new Map(
+          executionTargets
+            .map((name) => verifiedTargets.get(name.toLowerCase()))
+            .filter((item): item is NonNullable<typeof item> => Boolean(item))
+            .map((item) => ({
+              id: item.id,
+              username: item.name,
+              displayName: item.displayName,
+              avatarUrl: item.avatarUrl,
+            }))
+            .map((item) => [item.username.toLowerCase(), item]),
+        ).values(),
+      ).sort((a, b) => a.username.localeCompare(b.username));
+
       return NextResponse.json({
         policy,
         executions,
+        loggedPlayers,
         live: { connected: false, serverName: null, playerCount: null, queueCount: null },
         onlinePlayers: [],
       });
@@ -196,19 +228,48 @@ export async function GET(request: NextRequest) {
     ]);
 
     const rawPlayers = listPlayerNames(playersResponse.data);
-    const verifiedMap = await verifyRobloxUsernames(rawPlayers);
-    const onlinePlayers = rawPlayers
+    const executionTargets = Array.from(
+      new Set(
+        executions
+          .map((entry) => entry.targetPlayer)
+          .filter((entry) => entry && entry !== "GLOBAL"),
+      ),
+    );
+    const verifiedMap = await safeVerifyRobloxUsernames([...rawPlayers, ...executionTargets]);
+    const onlinePlayers = Array.from(
+      new Map(
+        rawPlayers
       .map((name) => verifiedMap.get(name.toLowerCase()))
       .filter((item): item is NonNullable<typeof item> => Boolean(item))
       .map((item) => ({
         id: item.id,
         username: item.name,
         displayName: item.displayName,
-      }));
+        avatarUrl: item.avatarUrl,
+          }))
+        .map((item) => [item.username.toLowerCase(), item]),
+      ).values(),
+    ).sort((a, b) => a.username.localeCompare(b.username));
+
+    const loggedPlayers = Array.from(
+      new Map(
+        executionTargets
+          .map((name) => verifiedMap.get(name.toLowerCase()))
+          .filter((item): item is NonNullable<typeof item> => Boolean(item))
+          .map((item) => ({
+            id: item.id,
+            username: item.name,
+            displayName: item.displayName,
+            avatarUrl: item.avatarUrl,
+          }))
+          .map((item) => [item.username.toLowerCase(), item]),
+      ).values(),
+    ).sort((a, b) => a.username.localeCompare(b.username));
 
     return NextResponse.json({
       policy,
       executions,
+      loggedPlayers,
       onlinePlayers,
       live: {
         connected: snapshot.server.ok,
