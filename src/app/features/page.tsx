@@ -61,10 +61,10 @@ export default function FeaturesPage() {
               staffing insight, infraction workflows, session control, and direct ER:LC data.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/login" className="button-primary px-6 py-3 text-base">
+              <Link href="/login" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
                 Sign In with Discord
               </Link>
-              <Link href="/app/onboarding" className="button-secondary px-6 py-3 text-base">
+              <Link href="/app/onboarding" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
                 Connect ER:LC Server
               </Link>
             </div>

@@ -227,7 +227,7 @@ export default function OnboardingPage() {
             type="password"
             value={serverKeyInput}
             onChange={(event) => setServerKeyInput(event.target.value)}
-            className="w-full min-w-[240px] flex-1 rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm sm:max-w-[420px]"
+            className="w-full flex-1 rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm sm:max-w-[420px]"
           />
           <button
             className="button-secondary px-4 py-2 text-sm"

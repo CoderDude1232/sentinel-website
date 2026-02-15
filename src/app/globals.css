@@ -589,6 +589,34 @@ body {
   }
 }
 
+@media (max-width: 640px) {
+  .hero-shell {
+    min-height: auto;
+    padding: 1.4rem 0.4rem 2.2rem;
+  }
+
+  .hero-wordmark {
+    font-size: clamp(2.7rem, 18vw, 4.4rem);
+    line-height: 0.96;
+  }
+
+  .cinematic-card {
+    min-height: 220px;
+  }
+
+  .login-frame {
+    padding: 1.05rem;
+  }
+
+  .features-shell {
+    padding: 1rem;
+  }
+
+  .dashboard-topbar {
+    padding: 0.78rem 0.84rem;
+  }
+}
+
 .stagger-rise {
   animation: rise-in 680ms ease both;
 }

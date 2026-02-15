@@ -48,7 +48,7 @@ export default function Home() {
           <p className="hero-subtle stagger-rise">
             Command infrastructure for ER:LC operations
           </p>
-          <h1 className="hero-wordmark stagger-rise delay-1 mt-4 flex items-center justify-center gap-3 sm:gap-4">
+          <h1 className="hero-wordmark stagger-rise delay-1 mt-4 flex items-center justify-center gap-3 max-[480px]:flex-col max-[480px]:gap-2 sm:gap-4">
             <Image
               src="/logo.png"
               alt="Sentinel logo"
@@ -65,13 +65,13 @@ export default function Home() {
           </p>
 
           <div className="stagger-rise delay-3 mt-9 flex flex-wrap items-center justify-center gap-3.5">
-            <Link href="/app" className="button-primary px-6 py-3 text-base">
+            <Link href="/app" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
               Launch Dashboard
             </Link>
-            <Link href="/app/onboarding" className="button-secondary px-6 py-3 text-base">
+            <Link href="/app/onboarding" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
               Connect ER:LC Server
             </Link>
-            <Link href="/api/auth/discord/login" className="button-secondary px-6 py-3 text-base">
+            <Link href="/api/auth/discord/login" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
               Sign In with Discord
             </Link>
           </div>

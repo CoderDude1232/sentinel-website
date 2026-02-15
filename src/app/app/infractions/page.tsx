@@ -352,7 +352,7 @@ export default function InfractionsPage() {
           subtitle="Choose online/offline target and submit discipline level."
         >
           <form onSubmit={handleSubmit} className="flex flex-wrap gap-2">
-            <div className="min-w-[280px] rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-2">
+            <div className="w-full rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-2 sm:min-w-[280px] sm:w-auto">
               <div className="grid gap-2 sm:grid-cols-[minmax(0,220px)_auto]">
                 <UiSelect
                   value={targetSource}
@@ -370,7 +370,7 @@ export default function InfractionsPage() {
               </div>
 
               {targetSource === "online" ? (
-                <div className="mt-2 min-w-[260px]">
+                <div className="mt-2 w-full sm:min-w-[260px]">
                   {onlinePlayers.length ? (
                     <UiSelect
                       value={selectedOnlineTarget || onlinePlayers[0].username}
@@ -398,7 +398,7 @@ export default function InfractionsPage() {
             <UiSelect
               value={level}
               onChange={(value) => setLevel(value)}
-              className="min-w-[170px]"
+              className="w-full sm:min-w-[170px] sm:w-auto"
               options={[
                 { value: "Warning", label: "Warning" },
                 { value: "Strike", label: "Strike" },
@@ -409,10 +409,10 @@ export default function InfractionsPage() {
             <input
               value={issuer}
               onChange={(event) => setIssuer(event.target.value)}
-              className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm sm:w-auto"
               placeholder="Issuer (optional)"
             />
-            <button className="button-primary px-3 py-2 text-sm" type="submit" disabled={loading || !resolvedTarget}>
+            <button className="button-primary w-full px-3 py-2 text-sm sm:w-auto" type="submit" disabled={loading || !resolvedTarget}>
               {loading ? "Saving..." : "Log infraction"}
             </button>
           </form>

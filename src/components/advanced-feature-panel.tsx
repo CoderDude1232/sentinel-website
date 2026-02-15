@@ -498,7 +498,7 @@ export function AdvancedFeaturePanel({
                     ) : null}
                   </div>
                 </div>
-                <div className="w-[170px]">
+                <div className="w-full sm:w-[170px]">
                   <UiSelect
                     value={item.status}
                     onChange={(value) => void updateStatus(item, value)}

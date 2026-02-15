@@ -10,7 +10,7 @@ export async function GlobalNavbar() {
 
   return (
     <header className="mx-auto w-full max-w-7xl px-5 pt-6 sm:px-8 sm:pt-7">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3">
           <Image
             src="/logo.png"
@@ -25,7 +25,7 @@ export async function GlobalNavbar() {
           </Link>
         </div>
 
-        <nav className="flex items-center gap-4 text-base">
+        <nav className="flex w-full items-center justify-end gap-3 text-sm sm:w-auto sm:gap-4 sm:text-base">
           <Link href="/features" className="nav-quiet-link">
             Features
           </Link>
