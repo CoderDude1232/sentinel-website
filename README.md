@@ -22,6 +22,9 @@ Sentinel is an ER:LC operations platform with modules for moderation, activity, 
    - `DATABASE_URL`
    - `APP_ENCRYPTION_KEY`
    - `SESSION_SECRET`
+   - Production URL examples:
+     - `NEXT_PUBLIC_APP_URL=https://sentinelerlc.xyz`
+     - `DISCORD_REDIRECT_URI=https://sentinelerlc.xyz/api/auth/discord/callback`
 3. Install dependencies:
 
 ```bash

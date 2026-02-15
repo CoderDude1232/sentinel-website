@@ -255,7 +255,7 @@ App pages:
 
 ## 12. Launch checklist
 
-- Discord OAuth flow works in production with Vercel domain.
+- Discord OAuth flow works in production with custom domain (`https://sentinelerlc.xyz`).
 - PRC sync stable for 72h with no unhandled rate-limit failures.
 - Role-based permissions validated by test matrix.
 - Retention jobs deleting expired records correctly.

@@ -12,6 +12,9 @@ function resolveAppUrl(): string {
   if (fromVercel) {
     return fromVercel.startsWith("http") ? fromVercel : `https://${fromVercel}`;
   }
+  if (process.env.NODE_ENV === "production") {
+    return "https://sentinelerlc.xyz";
+  }
   return "http://localhost:3000";
 }
 
