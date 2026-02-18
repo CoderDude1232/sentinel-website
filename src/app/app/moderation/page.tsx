@@ -73,6 +73,7 @@ const statusOptions: Array<{ value: string; label: string }> = [
 
 const MOD_CALL_DISPLAY_LIMIT = 12;
 const CASE_DISPLAY_LIMIT = 20;
+const QUICK_ACTION_COMMANDS_REQUIRING_REASON = new Set([":warn", ":kick", ":ban", ":tban", ":pm"]);
 const QUICK_ACTIONS: Array<{
   command: string;
   label: string;
@@ -242,6 +243,12 @@ export default function ModerationPage() {
       setMessage("Select or enter a player first.");
       return;
     }
+    const notesCandidate = (reason ?? quickReason).trim();
+    const resolvedNotes =
+      notesCandidate ||
+      (QUICK_ACTION_COMMANDS_REQUIRING_REASON.has(command.toLowerCase())
+        ? "Sentinel moderation action."
+        : "");
     setQuickLoading(true);
     setMessage("");
     try {
@@ -251,7 +258,7 @@ export default function ModerationPage() {
         body: JSON.stringify({
           command,
           targetPlayer: resolvedTarget,
-          notes: (reason ?? quickReason).trim(),
+          notes: resolvedNotes,
           quickAction: true,
         }),
       });
