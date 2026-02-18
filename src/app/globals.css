@@ -559,6 +559,25 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
+.dashboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.dashboard-status-pill {
+  border-radius: 999px;
+  border: 1px solid rgba(216, 29, 56, 0.26);
+  background: rgba(216, 29, 56, 0.09);
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.22rem 0.62rem;
+}
+
 .dashboard-topbar {
   display: flex;
   flex-wrap: wrap;
@@ -587,6 +606,61 @@ body {
   border-radius: 12px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.dashboard-metric-card {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  position: relative;
+}
+
+.dashboard-metric-card::before {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(to right, rgba(216, 29, 56, 0.52), rgba(216, 29, 56, 0.02));
+}
+
+.dashboard-feed-item {
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.dashboard-feed-item:hover {
+  border-color: rgba(216, 29, 56, 0.3);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.dashboard-level {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  padding: 0.15rem 0.48rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-level-info {
+  border-color: rgba(132, 166, 238, 0.32);
+  background: rgba(132, 166, 238, 0.11);
+  color: #b5c9fa;
+}
+
+.dashboard-level-warning {
+  border-color: rgba(238, 171, 95, 0.36);
+  background: rgba(238, 171, 95, 0.13);
+  color: #f2cb8f;
+}
+
+.dashboard-level-critical {
+  border-color: rgba(216, 29, 56, 0.45);
+  background: rgba(216, 29, 56, 0.16);
+  color: #ffb3bf;
 }
 
 .dashboard-nav-link {
@@ -627,6 +701,17 @@ body {
   transform: translateY(-1px);
 }
 
+.dashboard-action-link {
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+}
+
+.dashboard-action-link:hover {
+  border-color: rgba(216, 29, 56, 0.3);
+  background: rgba(216, 29, 56, 0.08);
+  transform: translateY(-1px);
+}
+
 @media (min-width: 900px) {
   .features-grid {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
@@ -660,6 +745,10 @@ body {
 
   .dashboard-topbar {
     padding: 0.78rem 0.84rem;
+  }
+
+  .dashboard-hero {
+    padding: 1rem 0.95rem 0.95rem;
   }
 }
 
