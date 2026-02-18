@@ -27,10 +27,10 @@ const emptySummary: DashboardSummary = {
 };
 
 const loadingCards: DashboardSummary["cards"] = [
-  { title: "Moderation", value: "--", details: "Loading live summary" },
-  { title: "Activity", value: "--", details: "Loading live summary" },
-  { title: "Sessions", value: "--", details: "Loading live summary" },
-  { title: "Infractions", value: "--", details: "Loading live summary" },
+  { title: "Moderation", value: "--", details: "" },
+  { title: "Activity", value: "--", details: "" },
+  { title: "Sessions", value: "--", details: "" },
+  { title: "Infractions", value: "--", details: "" },
 ];
 
 const coreRoutes: Array<{ href: string; label: string; hint: string }> = [
@@ -40,15 +40,15 @@ const coreRoutes: Array<{ href: string; label: string; hint: string }> = [
   { href: "/app/logs", label: "Audit logs", hint: "Trace history and exports" },
 ];
 
-function levelClass(level: string): string {
+function levelTone(level: string): string {
   const normalized = level.trim().toLowerCase();
   if (normalized === "warning") {
-    return "dashboard-level dashboard-level-warning";
+    return "text-[#f2cb8f]";
   }
   if (normalized === "error" || normalized === "critical") {
-    return "dashboard-level dashboard-level-critical";
+    return "text-[#ffb3bf]";
   }
-  return "dashboard-level dashboard-level-info";
+  return "text-[#b5c9fa]";
 }
 
 export default function AppOverviewPage() {
@@ -141,12 +141,12 @@ export default function AppOverviewPage() {
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         {(loading ? loadingCards : summary.cards).map((card) => (
-          <article key={card.title} className="dashboard-metric-card p-4">
+          <article key={card.title} className="dashboard-metric-card p-3">
             <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">{card.title}</p>
-            <p className="mt-1 text-2xl font-semibold tracking-tight">{card.value}</p>
-            <p className="mt-1 text-sm text-[var(--ink-soft)]">{card.details}</p>
+            <p className="mt-0.5 text-[1.9rem] font-semibold tracking-tight leading-none">{card.value}</p>
+            {card.details ? <p className="mt-1 text-xs text-[var(--ink-soft)]">{card.details}</p> : null}
           </article>
         ))}
       </div>
@@ -174,27 +174,33 @@ export default function AppOverviewPage() {
           </p>
         ) : (
           <>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-              <article className="dashboard-card p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Status</p>
-                <p className="mt-1 text-sm font-semibold">{summary.erlc.connected ? "Connected" : "Disconnected"}</p>
-              </article>
-              <article className="dashboard-card p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Server</p>
-                <p className="mt-1 text-sm font-semibold">{summary.erlc.serverName ?? "Unknown"}</p>
-              </article>
-              <article className="dashboard-card p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Players</p>
-                <p className="mt-1 text-sm font-semibold">{summary.erlc.playerCount ?? "N/A"}</p>
-              </article>
-              <article className="dashboard-card p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Queue</p>
-                <p className="mt-1 text-sm font-semibold">{summary.erlc.queueCount ?? "N/A"}</p>
-              </article>
-              <article className="dashboard-card p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Mod calls</p>
-                <p className="mt-1 text-sm font-semibold">{summary.erlc.modCallCount ?? "N/A"}</p>
-              </article>
+            <div className="mt-3 rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold">
+                  {summary.erlc.connected ? "Connected" : "Disconnected"}
+                </p>
+                <p className="text-xs text-[var(--ink-soft)]">
+                  {summary.erlc.serverName ?? "Unknown server"}
+                </p>
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-2.5 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]">Players</p>
+                  <p className="mt-0.5 text-sm font-semibold">{summary.erlc.playerCount ?? "N/A"}</p>
+                </div>
+                <div className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-2.5 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]">Queue</p>
+                  <p className="mt-0.5 text-sm font-semibold">{summary.erlc.queueCount ?? "N/A"}</p>
+                </div>
+                <div className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-2.5 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]">Mod calls</p>
+                  <p className="mt-0.5 text-sm font-semibold">{summary.erlc.modCallCount ?? "N/A"}</p>
+                </div>
+                <div className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-2.5 py-2">
+                  <p className="text-[10px] uppercase tracking-[0.1em] text-[var(--ink-soft)]">Command logs</p>
+                  <p className="mt-0.5 text-sm font-semibold">{summary.erlc.commandLogCount ?? "N/A"}</p>
+                </div>
+              </div>
             </div>
             {summary.erlc.endpoints ? (
               <p className="mt-3 text-xs text-[var(--ink-soft)]">
@@ -215,12 +221,14 @@ export default function AppOverviewPage() {
       <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <article className="dashboard-card p-4">
           <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">Recent activity</h2>
-          <div className="mt-3 space-y-2.5">
+          <div className="mt-3 space-y-2">
             {(summary.feed.length ? summary.feed : [{ time: "-", label: "No alerts yet", level: "Info" }]).slice(0, 6).map((item) => (
-              <div key={item.time + item.label} className="dashboard-feed-item rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-3 py-2">
+              <div key={item.time + item.label} className="dashboard-feed-item rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.018)] px-3 py-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm text-[var(--ink-strong)]">{item.label}</p>
-                  <span className={levelClass(item.level)}>{item.level}</span>
+                  <span className={`text-[10px] uppercase tracking-[0.08em] ${levelTone(item.level)}`}>
+                    {item.level}
+                  </span>
                 </div>
                 <p className="mt-1 text-xs text-[var(--ink-soft)]">{item.time}</p>
               </div>
@@ -244,11 +252,10 @@ export default function AppOverviewPage() {
           </article>
           <article className="dashboard-card p-4">
             <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">Core routes</h2>
-            <div className="mt-3 grid gap-2">
+            <div className="mt-3 grid gap-1.5">
               {coreRoutes.map((route) => (
-                <Link key={route.href} href={route.href} className="dashboard-action-link rounded-lg border border-[var(--line)] px-3 py-2">
+                <Link key={route.href} href={route.href} className="dashboard-action-link rounded-md border border-[var(--line)] px-3 py-2">
                   <p className="text-sm font-semibold">{route.label}</p>
-                  <p className="text-xs text-[var(--ink-soft)]">{route.hint}</p>
                 </Link>
               ))}
             </div>
