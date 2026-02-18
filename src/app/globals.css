@@ -172,18 +172,20 @@ body {
 .status-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 70;
-  display: block;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
   background: rgba(2, 2, 4, 0.72);
   backdrop-filter: blur(8px);
 }
 
 .status-modal-panel {
-  width: 100vw;
-  height: 100vh;
+  width: min(100%, 36rem);
+  max-height: calc(100vh - 2rem);
   border: 1px solid var(--line);
-  border-radius: 0;
-  padding: clamp(1rem, 2.8vw, 2rem);
+  border-radius: 14px;
+  padding: clamp(1rem, 2.2vw, 1.4rem);
   background:
     radial-gradient(circle at 8% 10%, rgba(216, 29, 56, 0.14), transparent 40%),
     linear-gradient(160deg, rgba(18, 18, 24, 0.95), rgba(8, 8, 11, 0.96));

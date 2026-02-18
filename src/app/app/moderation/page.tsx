@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { UiSelect } from "@/components/ui-select";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
@@ -193,6 +194,7 @@ export default function ModerationPage() {
   const [caseActionLoading, setCaseActionLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [actionStatusDialog, setActionStatusDialog] = useState<ActionStatusDialog | null>(null);
+  const [portalReady, setPortalReady] = useState(false);
   const [prc, setPrc] = useState<{
     connected: boolean;
     modCalls: LiveModCall[];
@@ -265,6 +267,10 @@ export default function ModerationPage() {
   }, [loadCases, loadOnlinePlayers]);
 
   useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
     if (!actionStatusDialog) {
       return;
     }
@@ -273,9 +279,11 @@ export default function ModerationPage() {
         setActionStatusDialog(null);
       }
     }
+    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
     };
   }, [actionStatusDialog]);
 
@@ -849,35 +857,38 @@ export default function ModerationPage() {
         </CollapsibleSection>
       </section>
 
-      {actionStatusDialog ? (
-        <div className="status-modal-backdrop">
-          <div className="status-modal-panel">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold tracking-tight">{actionStatusDialog.title}</h3>
-              <span className={getActionStatusClass(actionStatusDialog.kind)}>
-                {actionStatusDialog.kind.toUpperCase()}
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-[var(--ink-soft)]">{actionStatusDialog.summary}</p>
-            {actionStatusDialog.details.length ? (
-              <ul className="mt-3 space-y-1.5 text-sm text-[var(--ink-soft)]">
-                {actionStatusDialog.details.map((detail, index) => (
-                  <li key={`${detail}-${index}`}>- {detail}</li>
-                ))}
-              </ul>
-            ) : null}
-            <div className="mt-4 flex justify-end">
-              <button
-                type="button"
-                className="button-primary px-4 py-2 text-sm"
-                onClick={() => setActionStatusDialog(null)}
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {portalReady && actionStatusDialog
+        ? createPortal(
+            <div className="status-modal-backdrop" role="dialog" aria-modal="true" aria-label={actionStatusDialog.title}>
+              <div className="status-modal-panel">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold tracking-tight">{actionStatusDialog.title}</h3>
+                  <span className={getActionStatusClass(actionStatusDialog.kind)}>
+                    {actionStatusDialog.kind.toUpperCase()}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-[var(--ink-soft)]">{actionStatusDialog.summary}</p>
+                {actionStatusDialog.details.length ? (
+                  <ul className="mt-3 space-y-1.5 text-sm text-[var(--ink-soft)]">
+                    {actionStatusDialog.details.map((detail, index) => (
+                      <li key={`${detail}-${index}`}>- {detail}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    className="button-primary px-4 py-2 text-sm"
+                    onClick={() => setActionStatusDialog(null)}
+                  >
+                    OK
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
