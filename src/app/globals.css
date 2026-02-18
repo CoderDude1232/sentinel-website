@@ -567,17 +567,6 @@ body {
   gap: 0.85rem;
 }
 
-.dashboard-status-pill {
-  border-radius: 999px;
-  border: 1px solid rgba(216, 29, 56, 0.26);
-  background: rgba(216, 29, 56, 0.09);
-  color: var(--ink-soft);
-  font-size: 0.74rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.22rem 0.62rem;
-}
-
 .dashboard-topbar {
   display: flex;
   flex-wrap: wrap;
@@ -733,27 +722,6 @@ body {
   background:
     radial-gradient(circle at 92% 12%, rgba(216, 29, 56, 0.11), transparent 30%),
     linear-gradient(160deg, rgba(19, 19, 24, 0.6), rgba(10, 10, 13, 0.68));
-}
-
-.dashboard-endpoint {
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  padding: 0.2rem 0.6rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.dashboard-endpoint-ok {
-  border-color: rgba(82, 196, 122, 0.44);
-  background: rgba(82, 196, 122, 0.13);
-  color: #b6e9c8;
-}
-
-.dashboard-endpoint-fail {
-  border-color: rgba(216, 29, 56, 0.45);
-  background: rgba(216, 29, 56, 0.16);
-  color: #ffb3bf;
 }
 
 @media (min-width: 900px) {

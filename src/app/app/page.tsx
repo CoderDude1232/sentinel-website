@@ -51,10 +51,6 @@ function levelClass(level: string): string {
   return "dashboard-level dashboard-level-info";
 }
 
-function endpointClass(ok: boolean): string {
-  return ok ? "dashboard-endpoint dashboard-endpoint-ok" : "dashboard-endpoint dashboard-endpoint-fail";
-}
-
 export default function AppOverviewPage() {
   const [summary, setSummary] = useState<DashboardSummary>(emptySummary);
   const [loading, setLoading] = useState(true);
@@ -131,10 +127,6 @@ export default function AppOverviewPage() {
             </button>
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="dashboard-status-pill">Auto refresh: 20s</span>
-          <span className="dashboard-status-pill">Modules: live</span>
-        </div>
       </section>
 
       {syncMessage ? (
@@ -205,13 +197,11 @@ export default function AppOverviewPage() {
               </article>
             </div>
             {summary.erlc.endpoints ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {Object.entries(summary.erlc.endpoints).map(([name, state]) => (
-                  <span key={name} className={endpointClass(state.ok)}>
-                    {name} · {state.status}
-                  </span>
-                ))}
-              </div>
+              <p className="mt-3 text-xs text-[var(--ink-soft)]">
+                Endpoint health:{" "}
+                {Object.values(summary.erlc.endpoints).filter((item) => item.ok).length}/
+                {Object.keys(summary.erlc.endpoints).length} healthy
+              </p>
             ) : null}
             {summary.erlc.fetchedAt ? (
               <p className="mt-2 text-xs text-[var(--ink-soft)]">
