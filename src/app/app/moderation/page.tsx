@@ -526,9 +526,9 @@ export default function ModerationPage() {
                           type="button"
                           className="button-primary px-2.5 py-1 text-xs"
                           disabled={caseActionLoading}
-                          onClick={() => void createCaseFromModCall(quickActionTarget, "RDM Case")}
+                          onClick={() => void createCaseFromModCall(quickActionTarget, "Mod Call")}
                         >
-                          {caseActionLoading ? "Creating..." : "Create RDM Case"}
+                          {caseActionLoading ? "Creating..." : "Create Case"}
                         </button>
                       </div>
                     ) : (
