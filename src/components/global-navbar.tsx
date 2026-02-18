@@ -26,7 +26,7 @@ export async function GlobalNavbar() {
           {session ? (
             <Link
               href="/app"
-              className="rounded-full border border-[var(--line)] px-2 py-0.5 text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]"
+              className="text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]"
             >
               dashboard
             </Link>
