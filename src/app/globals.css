@@ -169,6 +169,64 @@ body {
   background: rgba(24, 24, 30, 0.92);
 }
 
+.status-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(2, 2, 4, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.status-modal-panel {
+  width: min(100%, 34rem);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(216, 29, 56, 0.14), transparent 40%),
+    linear-gradient(160deg, rgba(18, 18, 24, 0.95), rgba(8, 8, 11, 0.96));
+  box-shadow:
+    0 34px 54px -34px var(--shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.status-pill {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  padding: 0.18rem 0.58rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.status-pill-success {
+  border-color: rgba(76, 199, 156, 0.48);
+  background: rgba(52, 152, 121, 0.18);
+  color: #b9ffe9;
+}
+
+.status-pill-queued {
+  border-color: rgba(241, 182, 96, 0.5);
+  background: rgba(174, 116, 32, 0.2);
+  color: #ffe4be;
+}
+
+.status-pill-blocked {
+  border-color: rgba(220, 83, 102, 0.54);
+  background: rgba(146, 36, 56, 0.24);
+  color: #ffd2da;
+}
+
+.status-pill-error {
+  border-color: rgba(241, 128, 145, 0.58);
+  background: rgba(168, 41, 63, 0.26);
+  color: #ffd7de;
+}
+
 .moderation-action-button {
   display: inline-flex;
   align-items: center;

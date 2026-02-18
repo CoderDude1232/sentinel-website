@@ -88,8 +88,17 @@ const QUICK_ACTIONS: Array<{
 ];
 const MOD_CALL_ACTION_COMMANDS = new Set([":warn", ":kick", ":ban", ":tban", ":pm"]);
 const MOD_CALL_QUICK_ACTIONS = QUICK_ACTIONS.filter((entry) => MOD_CALL_ACTION_COMMANDS.has(entry.command));
+const QUICK_ACTION_LABEL_MAP = new Map(QUICK_ACTIONS.map((entry) => [entry.command.toLowerCase(), entry.label]));
 
 type CommandExecutionState = "Queued" | "Executed" | "Blocked";
+type ActionStatusKind = "executed" | "queued" | "blocked" | "error";
+
+type ActionStatusDialog = {
+  kind: ActionStatusKind;
+  title: string;
+  summary: string;
+  details: string[];
+};
 
 const ROBLOX_USERNAME_REGEX = /^[A-Za-z0-9_]{3,20}$/;
 
@@ -151,6 +160,23 @@ function formatTimestamp(value: string | null | undefined): string | null {
   return parsed.toLocaleString();
 }
 
+function getQuickActionLabel(command: string): string {
+  return QUICK_ACTION_LABEL_MAP.get(command.toLowerCase()) ?? command.toUpperCase();
+}
+
+function getActionStatusClass(kind: ActionStatusKind): string {
+  switch (kind) {
+    case "executed":
+      return "status-pill status-pill-success";
+    case "queued":
+      return "status-pill status-pill-queued";
+    case "blocked":
+      return "status-pill status-pill-blocked";
+    default:
+      return "status-pill status-pill-error";
+  }
+}
+
 export default function ModerationPage() {
   const [cases, setCases] = useState<ModerationCase[]>([]);
   const [type, setType] = useState("Mod Call");
@@ -166,6 +192,7 @@ export default function ModerationPage() {
   const [quickLoading, setQuickLoading] = useState(false);
   const [caseActionLoading, setCaseActionLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [actionStatusDialog, setActionStatusDialog] = useState<ActionStatusDialog | null>(null);
   const [prc, setPrc] = useState<{
     connected: boolean;
     modCalls: LiveModCall[];
@@ -237,6 +264,21 @@ export default function ModerationPage() {
     });
   }, [loadCases, loadOnlinePlayers]);
 
+  useEffect(() => {
+    if (!actionStatusDialog) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setActionStatusDialog(null);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [actionStatusDialog]);
+
   useAutoRefresh(
     () => loadOnlinePlayers({ silent: true }),
     { intervalMs: 12000, runImmediately: false, onlyWhenVisible: true },
@@ -248,10 +290,23 @@ export default function ModerationPage() {
   );
   const resolvedPlayer = playerSource === "online" ? selectedOnlinePlayer.trim() : offlinePlayer.trim();
 
+  function openActionDialog(input: ActionStatusDialog) {
+    setActionStatusDialog(input);
+  }
+
   async function runQuickAction(command: string, target: string, reason?: string) {
+    const actionLabel = getQuickActionLabel(command);
     const resolvedTarget = target.trim();
     if (!resolvedTarget) {
-      setMessage("Select or enter a player first.");
+      openActionDialog({
+        kind: "error",
+        title: "Action could not start",
+        summary: "No target player was provided.",
+        details: [
+          `Action: ${actionLabel}`,
+          "Select an online player or enter a valid Roblox username before submitting.",
+        ],
+      });
       return;
     }
     const notesCandidate = (reason ?? quickReason).trim();
@@ -277,27 +332,88 @@ export default function ModerationPage() {
         error?: string;
         queuedByCooldown?: boolean;
         cooldownRemaining?: number;
-        execution?: { result?: CommandExecutionState };
+        execution?: { result?: CommandExecutionState; notes?: string; createdAt?: string };
       };
       if (!response.ok) {
-        throw new Error(payload.error ?? `Failed to run ${command}`);
+        openActionDialog({
+          kind: "blocked",
+          title: "Action blocked",
+          summary: payload.error ?? `${actionLabel} could not be sent.`,
+          details: [
+            `Action: ${actionLabel}`,
+            `Target: ${resolvedTarget}`,
+            payload.execution?.notes ? `Detail: ${payload.execution.notes}` : "Check command policy and ER:LC online player state.",
+          ],
+        });
+        return;
       }
+
       const result = payload.execution?.result ?? "Queued";
       if (result === "Executed") {
-        setMessage(`Quick action executed in ER:LC: ${command} ${resolvedTarget}.`);
-      } else if (result === "Queued") {
-        if (payload.queuedByCooldown) {
-          const remainingText =
-            typeof payload.cooldownRemaining === "number" ? ` (${payload.cooldownRemaining}s)` : "";
-          setMessage(`Quick action queued due to cooldown${remainingText}: ${command} ${resolvedTarget}.`);
-        } else {
-          setMessage(`Quick action queued by command policy: ${command} ${resolvedTarget}.`);
-        }
-      } else {
-        setMessage(`Quick action was blocked: ${command} ${resolvedTarget}.`);
+        openActionDialog({
+          kind: "executed",
+          title: "Action executed",
+          summary: `${actionLabel} was sent to ER:LC successfully.`,
+          details: [
+            `Target: ${resolvedTarget}`,
+            resolvedNotes ? `Reason: ${resolvedNotes}` : "Reason: None provided",
+            payload.execution?.createdAt ? `Logged: ${formatTimestamp(payload.execution.createdAt) ?? payload.execution.createdAt}` : "Logged in command audit.",
+          ],
+        });
+        return;
       }
+
+      if (result === "Queued") {
+        if (payload.queuedByCooldown) {
+          const cooldownText =
+            typeof payload.cooldownRemaining === "number"
+              ? `${payload.cooldownRemaining}s remaining`
+              : "cooldown active";
+          openActionDialog({
+            kind: "queued",
+            title: "Action queued",
+            summary: `${actionLabel} is queued because command cooldown is active.`,
+            details: [
+              `Target: ${resolvedTarget}`,
+              `Queue reason: Cooldown (${cooldownText})`,
+              "Status: Waiting for next eligible dispatch window.",
+            ],
+          });
+        } else {
+          openActionDialog({
+            kind: "queued",
+            title: "Action queued",
+            summary: `${actionLabel} is queued by command approval policy.`,
+            details: [
+              `Target: ${resolvedTarget}`,
+              "Queue reason: Manual approval required.",
+              "Status: Pending operator review.",
+            ],
+          });
+        }
+        return;
+      }
+
+      openActionDialog({
+        kind: "blocked",
+        title: "Action blocked",
+        summary: `${actionLabel} was blocked before dispatch.`,
+        details: [
+          `Target: ${resolvedTarget}`,
+          payload.execution?.notes ? `Detail: ${payload.execution.notes}` : "No additional reason returned.",
+        ],
+      });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : `Failed to run ${command}`);
+      openActionDialog({
+        kind: "error",
+        title: "Action failed",
+        summary: error instanceof Error ? error.message : `Failed to run ${actionLabel}.`,
+        details: [
+          `Action: ${actionLabel}`,
+          `Target: ${resolvedTarget}`,
+          "The request did not complete successfully. Try again in a few seconds.",
+        ],
+      });
     } finally {
       setQuickLoading(false);
     }
@@ -732,6 +848,36 @@ export default function ModerationPage() {
           </ul>
         </CollapsibleSection>
       </section>
+
+      {actionStatusDialog ? (
+        <div className="status-modal-backdrop">
+          <div className="status-modal-panel">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-lg font-semibold tracking-tight">{actionStatusDialog.title}</h3>
+              <span className={getActionStatusClass(actionStatusDialog.kind)}>
+                {actionStatusDialog.kind.toUpperCase()}
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-[var(--ink-soft)]">{actionStatusDialog.summary}</p>
+            {actionStatusDialog.details.length ? (
+              <ul className="mt-3 space-y-1.5 text-sm text-[var(--ink-soft)]">
+                {actionStatusDialog.details.map((detail, index) => (
+                  <li key={`${detail}-${index}`}>- {detail}</li>
+                ))}
+              </ul>
+            ) : null}
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                className="button-primary px-4 py-2 text-sm"
+                onClick={() => setActionStatusDialog(null)}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
