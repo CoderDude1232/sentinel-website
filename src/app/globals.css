@@ -169,6 +169,66 @@ body {
   background: rgba(24, 24, 30, 0.92);
 }
 
+.moderation-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: transform 130ms ease, filter 130ms ease, box-shadow 130ms ease, border-color 130ms ease;
+}
+
+.moderation-action-button:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.06);
+}
+
+.moderation-action-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+
+.moderation-action-warn {
+  background: linear-gradient(130deg, rgba(194, 134, 44, 0.22), rgba(132, 84, 24, 0.18));
+  border-color: rgba(236, 174, 88, 0.38);
+  color: #ffe6b8;
+}
+
+.moderation-action-kick {
+  background: linear-gradient(130deg, rgba(196, 74, 52, 0.24), rgba(128, 37, 29, 0.2));
+  border-color: rgba(232, 100, 76, 0.4);
+  color: #ffd1c7;
+}
+
+.moderation-action-ban {
+  background: linear-gradient(130deg, rgba(216, 29, 56, 0.3), rgba(133, 19, 36, 0.26));
+  border-color: rgba(216, 29, 56, 0.56);
+  color: #ffd2d8;
+}
+
+.moderation-action-tban {
+  background: linear-gradient(130deg, rgba(175, 38, 83, 0.28), rgba(102, 18, 52, 0.24));
+  border-color: rgba(198, 72, 113, 0.48);
+  color: #ffd4e7;
+}
+
+.moderation-action-pm {
+  background: linear-gradient(130deg, rgba(79, 108, 202, 0.25), rgba(45, 64, 129, 0.22));
+  border-color: rgba(113, 143, 240, 0.44);
+  color: #d8e3ff;
+}
+
+.moderation-action-unban {
+  background: linear-gradient(130deg, rgba(48, 158, 122, 0.24), rgba(24, 97, 74, 0.2));
+  border-color: rgba(84, 195, 158, 0.42);
+  color: #cbffed;
+}
+
 .ui-checkbox {
   -webkit-appearance: none;
   appearance: none;

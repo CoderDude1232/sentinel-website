@@ -15,23 +15,33 @@ type ModerationCase = {
   createdAt: string;
 };
 
+type RobloxProfileSummary = {
+  id: number;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  profileUrl: string;
+};
+
+type ModCallIdentity = {
+  raw: string | null;
+  username: string | null;
+  robloxId: number | null;
+  profile: RobloxProfileSummary | null;
+};
+
 type LiveModCall = {
   primary: string;
   secondary: string | null;
   detail: string | null;
   occurredAt: string | null;
+  reporter?: ModCallIdentity;
+  target?: ModCallIdentity;
 };
 
 type OnlinePlayersResponse = {
   onlinePlayers?: Array<{ id: number; username: string; displayName: string; avatarUrl: string | null }>;
   error?: string;
-};
-
-type OnlinePlayerIdentity = { id: number; username: string; displayName: string; avatarUrl: string | null };
-
-type ParsedIdentity = {
-  username: string;
-  robloxId: number | null;
 };
 
 const safeguards = [
@@ -47,6 +57,7 @@ const playerSourceOptions: Array<{ value: "online" | "offline"; label: string }>
 ];
 
 const caseTypeOptions: Array<{ value: string; label: string }> = [
+  { value: "RDM Case", label: "RDM Case" },
   { value: "Mod Call", label: "Mod Call" },
   { value: "Traffic Stop", label: "Traffic Stop" },
   { value: "Fail RP", label: "Fail RP" },
@@ -62,80 +73,70 @@ const statusOptions: Array<{ value: string; label: string }> = [
 
 const MOD_CALL_DISPLAY_LIMIT = 12;
 const CASE_DISPLAY_LIMIT = 20;
-const QUICK_ACTIONS: Array<{ command: string; label: string }> = [
-  { command: ":warn", label: "Warn" },
-  { command: ":kick", label: "Kick" },
-  { command: ":ban", label: "Ban" },
-  { command: ":tban", label: "Temp Ban" },
-  { command: ":pm", label: "PM" },
-  { command: ":unban", label: "Unban" },
+const QUICK_ACTIONS: Array<{
+  command: string;
+  label: string;
+  tone: "warn" | "kick" | "ban" | "tban" | "pm" | "unban";
+}> = [
+  { command: ":warn", label: "Warn", tone: "warn" },
+  { command: ":kick", label: "Kick", tone: "kick" },
+  { command: ":ban", label: "Ban", tone: "ban" },
+  { command: ":tban", label: "Temp Ban", tone: "tban" },
+  { command: ":pm", label: "Message", tone: "pm" },
+  { command: ":unban", label: "Unban", tone: "unban" },
 ];
+const MOD_CALL_ACTION_COMMANDS = new Set([":warn", ":kick", ":ban", ":tban", ":pm"]);
+const MOD_CALL_QUICK_ACTIONS = QUICK_ACTIONS.filter((entry) => MOD_CALL_ACTION_COMMANDS.has(entry.command));
 
 type CommandExecutionState = "Queued" | "Executed" | "Blocked";
 
 const ROBLOX_USERNAME_REGEX = /^[A-Za-z0-9_]{3,20}$/;
 
-function parseIdentity(value: string | null | undefined): ParsedIdentity | null {
+function extractUsernameCandidate(value: string | null | undefined): string {
   if (!value) {
-    return null;
+    return "";
   }
   const trimmed = value.trim();
   if (!trimmed) {
-    return null;
+    return "";
   }
 
   const colonMatch = trimmed.match(/^([A-Za-z0-9_]{3,20})\s*:\s*(\d+)$/);
   if (colonMatch) {
-    return {
-      username: colonMatch[1],
-      robloxId: Number.parseInt(colonMatch[2], 10),
-    };
+    return colonMatch[1];
   }
 
   const bracketMatch = trimmed.match(/^([A-Za-z0-9_]{3,20})\s*\(\s*(\d+)\s*\)$/);
   if (bracketMatch) {
-    return {
-      username: bracketMatch[1],
-      robloxId: Number.parseInt(bracketMatch[2], 10),
-    };
+    return bracketMatch[1];
   }
 
   if (ROBLOX_USERNAME_REGEX.test(trimmed)) {
-    return { username: trimmed, robloxId: null };
+    return trimmed;
   }
 
   const head = trimmed.split(":")[0]?.trim();
   if (head && ROBLOX_USERNAME_REGEX.test(head)) {
-    return { username: head, robloxId: null };
+    return head;
   }
 
-  return null;
+  return "";
 }
 
 function resolveModActionTarget(call: LiveModCall): string {
-  const secondary = parseIdentity(call.secondary)?.username ?? call.secondary?.trim() ?? "";
+  const secondary = call.target?.profile?.username ?? call.target?.username ?? extractUsernameCandidate(call.secondary);
   if (ROBLOX_USERNAME_REGEX.test(secondary)) {
     return secondary;
   }
-  const primary = parseIdentity(call.primary)?.username ?? "";
+  const primary = call.reporter?.profile?.username ?? call.reporter?.username ?? extractUsernameCandidate(call.primary);
   if (ROBLOX_USERNAME_REGEX.test(primary)) {
     return primary;
   }
   return "";
 }
 
-function resolveOnlineIdentity(
-  parsed: ParsedIdentity | null,
-  byUsername: Map<string, OnlinePlayerIdentity>,
-  byId: Map<number, OnlinePlayerIdentity>,
-): OnlinePlayerIdentity | null {
-  if (!parsed) {
-    return null;
-  }
-  if (parsed.robloxId && byId.has(parsed.robloxId)) {
-    return byId.get(parsed.robloxId) ?? null;
-  }
-  return byUsername.get(parsed.username.toLowerCase()) ?? null;
+function getQuickActionButtonClass(tone: "warn" | "kick" | "ban" | "tban" | "pm" | "unban"): string {
+  return `moderation-action-button moderation-action-${tone}`;
 }
 
 export default function ModerationPage() {
@@ -151,6 +152,7 @@ export default function ModerationPage() {
   const [loading, setLoading] = useState(false);
   const [quickReason, setQuickReason] = useState("");
   const [quickLoading, setQuickLoading] = useState(false);
+  const [caseActionLoading, setCaseActionLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [prc, setPrc] = useState<{
     connected: boolean;
@@ -232,20 +234,6 @@ export default function ModerationPage() {
     () => cases.filter((item) => !["resolved", "closed"].includes(item.status.toLowerCase())).length,
     [cases],
   );
-  const onlinePlayersByUsername = useMemo(() => {
-    const map = new Map<string, OnlinePlayerIdentity>();
-    for (const player of onlinePlayers) {
-      map.set(player.username.toLowerCase(), player);
-    }
-    return map;
-  }, [onlinePlayers]);
-  const onlinePlayersById = useMemo(() => {
-    const map = new Map<number, OnlinePlayerIdentity>();
-    for (const player of onlinePlayers) {
-      map.set(player.id, player);
-    }
-    return map;
-  }, [onlinePlayers]);
   const resolvedPlayer = playerSource === "online" ? selectedOnlinePlayer.trim() : offlinePlayer.trim();
 
   async function runQuickAction(command: string, target: string, reason?: string) {
@@ -294,6 +282,43 @@ export default function ModerationPage() {
       setMessage(error instanceof Error ? error.message : `Failed to run ${command}`);
     } finally {
       setQuickLoading(false);
+    }
+  }
+
+  async function createCaseFromModCall(targetPlayer: string, caseType: string) {
+    const resolvedTarget = targetPlayer.trim();
+    if (!resolvedTarget) {
+      setMessage("No valid Roblox target found for this mod call.");
+      return;
+    }
+
+    setCaseActionLoading(true);
+    setMessage("");
+    try {
+      const isOnline = onlinePlayers.some(
+        (entry) => entry.username.toLowerCase() === resolvedTarget.toLowerCase(),
+      );
+      const response = await fetch("/api/panels/moderation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: caseType,
+          player: resolvedTarget,
+          playerSource: isOnline ? "online" : "offline",
+          owner,
+          status: "Investigating",
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to create moderation case");
+      }
+      await loadCases();
+      setMessage(`${caseType} created for ${resolvedTarget}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to create moderation case");
+    } finally {
+      setCaseActionLoading(false);
     }
   }
 
@@ -368,116 +393,145 @@ export default function ModerationPage() {
                 </p>
               ) : null}
             <div className="max-h-[460px] space-y-2 overflow-y-auto pr-1 text-sm">
-              {prc.modCalls.slice(0, MOD_CALL_DISPLAY_LIMIT).map((call, index) => (
-                <div
-                  key={`${call.primary}-${call.secondary ?? "none"}-${call.occurredAt ?? index}`}
-                  className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3.5"
-                >
-                  {(() => {
-                    const reporterIdentity = parseIdentity(call.primary);
-                    const targetIdentity = parseIdentity(call.secondary);
-                    const reporterProfile = resolveOnlineIdentity(
-                      reporterIdentity,
-                      onlinePlayersByUsername,
-                      onlinePlayersById,
-                    );
-                    const targetProfile = resolveOnlineIdentity(
-                      targetIdentity,
-                      onlinePlayersByUsername,
-                      onlinePlayersById,
-                    );
-                    const reporterName = reporterProfile?.username ?? reporterIdentity?.username ?? call.primary;
-                    const reporterDisplay = reporterProfile?.displayName ?? null;
-                    const reporterAvatar = reporterProfile?.avatarUrl ?? null;
-                    const reporterRobloxId = reporterIdentity?.robloxId ?? reporterProfile?.id ?? null;
-                    const targetName = targetProfile?.username ?? targetIdentity?.username ?? call.secondary ?? null;
-                    const targetRobloxId = targetIdentity?.robloxId ?? targetProfile?.id ?? null;
-                    const quickActionTarget = resolveModActionTarget(call);
+              {prc.modCalls.slice(0, MOD_CALL_DISPLAY_LIMIT).map((call, index) => {
+                const reporterNameCandidate =
+                  call.reporter?.profile?.username ??
+                  call.reporter?.username ??
+                  extractUsernameCandidate(call.primary);
+                const reporterName = reporterNameCandidate.trim() ? reporterNameCandidate : "Unknown";
+                const reporterDisplay = call.reporter?.profile?.displayName ?? null;
+                const reporterAvatar = call.reporter?.profile?.avatarUrl ?? null;
+                const reporterRobloxId = call.reporter?.profile?.id ?? call.reporter?.robloxId ?? null;
+                const reporterProfileUrl =
+                  call.reporter?.profile?.profileUrl ??
+                  (reporterRobloxId ? `https://www.roblox.com/users/${reporterRobloxId}/profile` : null);
 
-                    return (
-                      <>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 items-start gap-2.5">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.04)]">
-                              {reporterAvatar ? (
-                                <img src={reporterAvatar} alt={reporterName} className="h-full w-full object-cover" />
-                              ) : (
-                                <span className="text-xs font-semibold text-[var(--ink-soft)]">
-                                  {reporterName.slice(0, 2).toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold">{reporterName}</p>
-                              <p className="truncate text-xs text-[var(--ink-soft)]">
-                                {reporterDisplay ?? "Mod call reporter"}
-                              </p>
-                            </div>
-                          </div>
-                          {call.occurredAt ? (
-                            <p className="shrink-0 text-[11px] uppercase tracking-[0.08em] text-[var(--ink-soft)]">
-                              {call.occurredAt}
-                            </p>
-                          ) : null}
-                        </div>
+                const targetNameCandidate =
+                  call.target?.profile?.username ??
+                  call.target?.username ??
+                  extractUsernameCandidate(call.secondary);
+                const targetName = targetNameCandidate.trim() ? targetNameCandidate : null;
+                const targetRobloxId = call.target?.profile?.id ?? call.target?.robloxId ?? null;
+                const targetProfileUrl =
+                  call.target?.profile?.profileUrl ??
+                  (targetRobloxId ? `https://www.roblox.com/users/${targetRobloxId}/profile` : null);
 
-                        <div className="mt-2 space-y-1 text-xs text-[var(--ink-soft)]">
-                          <p>
-                            Reporter ID:{" "}
-                            <span className="font-medium text-[var(--ink)]">
-                              {reporterRobloxId ? reporterRobloxId : "Unavailable"}
+                const quickActionTarget = resolveModActionTarget(call);
+                const modCallReason =
+                  call.detail?.trim() ? `PRC mod call: ${call.detail.trim()}` : `PRC mod call from ${reporterName}`;
+
+                return (
+                  <div
+                    key={`${call.primary}-${call.secondary ?? "none"}-${call.occurredAt ?? index}`}
+                    className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3.5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start gap-2.5">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.04)]">
+                          {reporterAvatar ? (
+                            <img src={reporterAvatar} alt={reporterName} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-semibold text-[var(--ink-soft)]">
+                              {reporterName.slice(0, 2).toUpperCase()}
                             </span>
-                          </p>
-                          {targetName ? (
-                            <p>
-                              Target: <span className="font-medium text-[var(--ink)]">{targetName}</span>
-                              {targetRobloxId ? ` (${targetRobloxId})` : ""}
-                            </p>
-                          ) : null}
-                          {call.detail ? (
-                            <p>
-                              Report: <span className="text-[var(--ink)]">{call.detail}</span>
-                            </p>
-                          ) : null}
+                          )}
                         </div>
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">{reporterName}</p>
+                          <p className="truncate text-xs text-[var(--ink-soft)]">
+                            {reporterDisplay ?? "Roblox profile unavailable"}
+                          </p>
+                        </div>
+                      </div>
+                      {call.occurredAt ? (
+                        <p className="shrink-0 text-[11px] uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                          {call.occurredAt}
+                        </p>
+                      ) : null}
+                    </div>
 
-                        {quickActionTarget ? (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            <button
-                              type="button"
-                              className="button-secondary px-2 py-1 text-xs"
-                              disabled={quickLoading}
-                              onClick={() =>
-                                void runQuickAction(
-                                  ":warn",
-                                  quickActionTarget,
-                                  `PRC mod call follow-up: ${reporterName}`,
-                                )
-                              }
-                            >
-                              Warn
-                            </button>
-                            <button
-                              type="button"
-                              className="button-secondary px-2 py-1 text-xs"
-                              disabled={quickLoading}
-                              onClick={() =>
-                                void runQuickAction(
-                                  ":kick",
-                                  quickActionTarget,
-                                  `PRC mod call action: ${reporterName}`,
-                                )
-                              }
-                            >
-                              Kick
-                            </button>
-                          </div>
+                    <div className="mt-2 grid gap-1 text-xs text-[var(--ink-soft)] sm:grid-cols-2">
+                      <p>
+                        Reporter ID:{" "}
+                        <span className="font-medium text-[var(--ink)]">
+                          {reporterRobloxId ? reporterRobloxId : "Unavailable"}
+                        </span>
+                      </p>
+                      <p>
+                        Target:{" "}
+                        <span className="font-medium text-[var(--ink)]">
+                          {targetName ?? "Not provided"}
+                        </span>
+                      </p>
+                      <p>
+                        Target ID:{" "}
+                        <span className="font-medium text-[var(--ink)]">
+                          {targetRobloxId ? targetRobloxId : "Unavailable"}
+                        </span>
+                      </p>
+                      <p>
+                        Report:{" "}
+                        <span className="text-[var(--ink)]">
+                          {call.detail?.trim() || "No reason included in mod call."}
+                        </span>
+                      </p>
+                    </div>
+
+                    {(reporterProfileUrl || targetProfileUrl) ? (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {reporterProfileUrl ? (
+                          <a
+                            href={reporterProfileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="button-secondary px-2.5 py-1 text-xs"
+                          >
+                            Reporter Profile
+                          </a>
                         ) : null}
-                      </>
-                    );
-                  })()}
-                </div>
-              ))}
+                        {targetProfileUrl ? (
+                          <a
+                            href={targetProfileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="button-secondary px-2.5 py-1 text-xs"
+                          >
+                            Target Profile
+                          </a>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {quickActionTarget ? (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {MOD_CALL_QUICK_ACTIONS.map((action) => (
+                          <button
+                            key={`${call.primary}-${call.secondary ?? "none"}-${action.command}`}
+                            type="button"
+                            className={`${getQuickActionButtonClass(action.tone)} px-2.5 py-1 text-xs`}
+                            disabled={quickLoading}
+                            onClick={() => void runQuickAction(action.command, quickActionTarget, modCallReason)}
+                          >
+                            {action.label}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          className="button-primary px-2.5 py-1 text-xs"
+                          disabled={caseActionLoading}
+                          onClick={() => void createCaseFromModCall(quickActionTarget, "RDM Case")}
+                        >
+                          {caseActionLoading ? "Creating..." : "Create RDM Case"}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-xs text-[var(--ink-soft)]">
+                        No valid Roblox target detected for quick actions.
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
               {!prc.modCalls.length ? <p className="text-[var(--ink-soft)]">No active mod calls right now.</p> : null}
             </div>
             </>
@@ -513,7 +567,7 @@ export default function ModerationPage() {
                     <button
                       key={`${item.id}-${action.command}`}
                       type="button"
-                      className="button-secondary px-2 py-1 text-xs"
+                      className={`${getQuickActionButtonClass(action.tone)} px-2.5 py-1 text-xs`}
                       disabled={quickLoading}
                       onClick={() =>
                         void runQuickAction(
@@ -619,7 +673,7 @@ export default function ModerationPage() {
                   <button
                     key={action.command}
                     type="button"
-                    className="button-secondary px-2 py-1 text-xs"
+                    className={`${getQuickActionButtonClass(action.tone)} px-2.5 py-1 text-xs`}
                     disabled={quickLoading || !resolvedPlayer}
                     onClick={() => void runQuickAction(action.command, resolvedPlayer)}
                   >
