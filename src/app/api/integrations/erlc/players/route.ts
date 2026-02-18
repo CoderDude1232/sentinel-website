@@ -3,74 +3,18 @@ import { getSessionUserFromRequest } from "@/lib/auth";
 import { getUserErlcKey } from "@/lib/erlc-store";
 import { fetchErlcPlayers } from "@/lib/erlc-api";
 import { verifyRobloxUsernames } from "@/lib/roblox-api";
+import { extractErlcPlayerUsernames } from "@/lib/erlc-player-utils";
 
 function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 
-function getObject(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function getString(value: unknown): string | null {
-  if (typeof value !== "string") {
-    return null;
+async function safeVerifyRobloxUsernames(usernames: string[]) {
+  try {
+    return await verifyRobloxUsernames(usernames);
+  } catch {
+    return new Map();
   }
-  const trimmed = value.trim();
-  return trimmed || null;
-}
-
-function pickString(record: Record<string, unknown> | null, keys: string[]): string | null {
-  if (!record) {
-    return null;
-  }
-  for (const key of keys) {
-    const value = getString(record[key]);
-    if (value) {
-      return value;
-    }
-  }
-  return null;
-}
-
-function getArray(value: unknown): unknown[] {
-  if (Array.isArray(value)) {
-    return value;
-  }
-  const record = getObject(value);
-  if (!record) {
-    return [];
-  }
-  const keys = ["players", "Players", "data", "Data"];
-  for (const key of keys) {
-    if (Array.isArray(record[key])) {
-      return record[key] as unknown[];
-    }
-  }
-  return [];
-}
-
-function inferPlayerName(entry: unknown): string | null {
-  if (typeof entry === "string") {
-    const trimmed = entry.trim();
-    return trimmed || null;
-  }
-  const record = getObject(entry);
-  if (!record) {
-    return null;
-  }
-  return pickString(record, [
-    "Player",
-    "player",
-    "Username",
-    "username",
-    "Name",
-    "name",
-    "Citizen",
-    "citizen",
-  ]);
 }
 
 export async function GET(request: NextRequest) {
@@ -97,15 +41,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const rawPlayerNames = Array.from(
-      new Set(
-        getArray(playersResponse.data)
-          .map(inferPlayerName)
-          .filter((name): name is string => Boolean(name)),
-      ),
-    );
-
-    const verifiedMap = await verifyRobloxUsernames(rawPlayerNames);
+    const rawPlayerNames = extractErlcPlayerUsernames(playersResponse.data);
+    const verifiedMap = await safeVerifyRobloxUsernames(rawPlayerNames);
     const onlinePlayers = rawPlayerNames
       .map((name) => verifiedMap.get(name.toLowerCase()))
       .filter((identity): identity is NonNullable<typeof identity> => Boolean(identity))

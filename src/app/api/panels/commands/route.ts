@@ -3,6 +3,7 @@ import { getSessionUserFromRequest } from "@/lib/auth";
 import { fetchErlcPlayers, fetchErlcServerSnapshot, runErlcCommand } from "@/lib/erlc-api";
 import { getUserErlcKey } from "@/lib/erlc-store";
 import { type RobloxIdentity, verifyRobloxUsernames } from "@/lib/roblox-api";
+import { extractErlcPlayerUsernames, extractRobloxUsernameCandidate } from "@/lib/erlc-player-utils";
 import {
   createAuditEvent,
   createCommandExecution,
@@ -30,40 +31,6 @@ function asString(value: unknown): string | null {
   return trimmed || null;
 }
 
-function listPlayerNames(payload: unknown): string[] {
-  if (Array.isArray(payload)) {
-    return payload
-      .map((entry) => {
-        if (typeof entry === "string") return entry.trim();
-        const record = asObject(entry);
-        return (
-          asString(record?.Player) ??
-          asString(record?.player) ??
-          asString(record?.Username) ??
-          asString(record?.username) ??
-          asString(record?.Name) ??
-          asString(record?.name) ??
-          ""
-        );
-      })
-      .filter((name): name is string => Boolean(name));
-  }
-
-  const record = asObject(payload);
-  if (!record) {
-    return [];
-  }
-  const nested =
-    (Array.isArray(record.players) ? record.players : null) ??
-    (Array.isArray(record.Players) ? record.Players : null) ??
-    (Array.isArray(record.data) ? record.data : null) ??
-    (Array.isArray(record.Data) ? record.Data : null);
-  if (!nested) {
-    return [];
-  }
-  return listPlayerNames(nested);
-}
-
 function inferServerName(payload: unknown): string | null {
   const record = asObject(payload);
   return (
@@ -80,7 +47,7 @@ function inferPlayerCount(serverPayload: unknown, playersPayload: unknown): numb
   if (Number.isFinite(serverCount)) {
     return serverCount;
   }
-  return listPlayerNames(playersPayload).length || null;
+  return extractErlcPlayerUsernames(playersPayload).length || null;
 }
 
 function inferQueueCount(queuePayload: unknown): number | null {
@@ -227,7 +194,7 @@ export async function GET(request: NextRequest) {
       fetchErlcPlayers(erlcKey.serverKey),
     ]);
 
-    const rawPlayers = listPlayerNames(playersResponse.data);
+    const rawPlayers = extractErlcPlayerUsernames(playersResponse.data);
     const executionTargets = Array.from(
       new Set(
         executions
@@ -348,7 +315,8 @@ export async function POST(request: NextRequest) {
   }
 
   const command = body.command?.trim() ?? "";
-  const targetPlayer = body.targetPlayer?.trim() ?? "";
+  const rawTargetPlayer = body.targetPlayer?.trim() ?? "";
+  const targetPlayer = extractRobloxUsernameCandidate(rawTargetPlayer) ?? rawTargetPlayer;
   const isGlobalTarget = !targetPlayer;
   const resolvedTarget = isGlobalTarget ? "GLOBAL" : targetPlayer;
   const commandKey = command.toLowerCase();
@@ -454,12 +422,17 @@ export async function POST(request: NextRequest) {
 
     if (!isGlobalTarget && !SKIP_ONLINE_TARGET_CHECK_COMMANDS.has(commandKey)) {
       const playersResponse = await fetchErlcPlayers(erlcKey.serverKey);
-      const onlineNames = listPlayerNames(playersResponse.data);
-      const verifiedMap = await verifyRobloxUsernames(onlineNames);
-      const matchedOnline = onlineNames
-        .map((name) => verifiedMap.get(name.toLowerCase())?.name.toLowerCase())
-        .filter((name): name is string => Boolean(name))
-        .includes(targetPlayer.toLowerCase());
+      const onlineNames = extractErlcPlayerUsernames(playersResponse.data);
+      const onlineNameSet = new Set(onlineNames.map((name) => name.toLowerCase()));
+      const matchedOnlineDirect = onlineNameSet.has(targetPlayer.toLowerCase());
+      let matchedOnline = matchedOnlineDirect;
+
+      if (!matchedOnline) {
+        const verifiedTarget = await safeVerifyRobloxUsernames([targetPlayer]);
+        const canonicalTarget =
+          verifiedTarget.get(targetPlayer.toLowerCase())?.name.toLowerCase() ?? null;
+        matchedOnline = canonicalTarget ? onlineNameSet.has(canonicalTarget) : false;
+      }
 
       if (!matchedOnline) {
         const blocked = await createCommandExecution({
