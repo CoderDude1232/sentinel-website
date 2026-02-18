@@ -140,6 +140,17 @@ function getQuickActionButtonClass(tone: "warn" | "kick" | "ban" | "tban" | "pm"
   return `moderation-action-button moderation-action-${tone}`;
 }
 
+function formatTimestamp(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return parsed.toLocaleString();
+}
+
 export default function ModerationPage() {
   const [cases, setCases] = useState<ModerationCase[]>([]);
   const [type, setType] = useState("Mod Call");
@@ -394,6 +405,11 @@ export default function ModerationPage() {
             <p className="text-sm text-[var(--ink-soft)]">Connect ER:LC to view live mod calls.</p>
           ) : (
             <>
+              {prc.fetchedAt ? (
+                <p className="mb-2 text-xs text-[var(--ink-soft)]">
+                  Synced: {formatTimestamp(prc.fetchedAt) ?? prc.fetchedAt}
+                </p>
+              ) : null}
               {prc.modCalls.length > MOD_CALL_DISPLAY_LIMIT ? (
                 <p className="mb-2 text-xs text-[var(--ink-soft)]">
                   Showing {MOD_CALL_DISPLAY_LIMIT} of {prc.modCalls.length} mod calls.
@@ -452,7 +468,7 @@ export default function ModerationPage() {
                       </div>
                       {call.occurredAt ? (
                         <p className="shrink-0 text-[11px] uppercase tracking-[0.08em] text-[var(--ink-soft)]">
-                          {call.occurredAt}
+                          {formatTimestamp(call.occurredAt) ?? call.occurredAt}
                         </p>
                       ) : null}
                     </div>
@@ -569,6 +585,9 @@ export default function ModerationPage() {
                 </div>
                 <p className="text-[var(--ink-soft)]">{item.type} - {item.player}</p>
                 <p className="text-xs text-[var(--ink-soft)]">Owner: {item.owner}</p>
+                <p className="text-xs text-[var(--ink-soft)]">
+                  Created: {formatTimestamp(item.createdAt) ?? item.createdAt}
+                </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {QUICK_ACTIONS.map((action) => (
                     <button

@@ -16,6 +16,17 @@ type AlertsResponse = {
   error?: string;
 };
 
+function formatTimestamp(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return parsed.toLocaleString();
+}
+
 export default function AlertsPage() {
   const [data, setData] = useState<AlertsResponse>({ feed: [], webhookStatus: [] });
   const [loading, setLoading] = useState(false);
@@ -152,6 +163,11 @@ export default function AlertsPage() {
           <p className="mt-2 text-sm text-[var(--ink-soft)]">Connect ER:LC to stream mod-call and ban pressure into alerts.</p>
         ) : (
           <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {data.prcSignals.fetchedAt ? (
+              <p className="md:col-span-2 text-xs text-[var(--ink-soft)]">
+                Synced: {formatTimestamp(data.prcSignals.fetchedAt) ?? data.prcSignals.fetchedAt}
+              </p>
+            ) : null}
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
                 Open mod calls ({data.prcSignals.activeModCalls})
@@ -159,7 +175,13 @@ export default function AlertsPage() {
               {visibleModCalls.map((entry, index) => (
                 <div key={`${entry.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
                   <p className="font-semibold">{entry.primary}</p>
+                  {entry.secondary ? <p className="text-[var(--ink-soft)]">Target: {entry.secondary}</p> : null}
                   {entry.detail ? <p className="text-[var(--ink-soft)]">{entry.detail}</p> : null}
+                  {entry.occurredAt ? (
+                    <p className="text-xs text-[var(--ink-soft)]">
+                      Reported: {formatTimestamp(entry.occurredAt) ?? entry.occurredAt}
+                    </p>
+                  ) : null}
                 </div>
               ))}
               {data.prcSignals.modCalls.length > visibleModCalls.length ? (
@@ -176,7 +198,13 @@ export default function AlertsPage() {
               {visibleBans.map((entry, index) => (
                 <div key={`${entry.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
                   <p className="font-semibold">{entry.primary}</p>
+                  {entry.secondary ? <p className="text-[var(--ink-soft)]">Target: {entry.secondary}</p> : null}
                   {entry.detail ? <p className="text-[var(--ink-soft)]">{entry.detail}</p> : null}
+                  {entry.occurredAt ? (
+                    <p className="text-xs text-[var(--ink-soft)]">
+                      Recorded: {formatTimestamp(entry.occurredAt) ?? entry.occurredAt}
+                    </p>
+                  ) : null}
                 </div>
               ))}
               {data.prcSignals.bans.length > visibleBans.length ? (

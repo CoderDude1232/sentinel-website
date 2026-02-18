@@ -55,6 +55,17 @@ const defaultPolicy: InfractionPolicy = {
   autoTerminationThreshold: 12,
 };
 
+function formatTimestamp(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return parsed.toLocaleString();
+}
+
 export default function InfractionsPage() {
   const PRC_BANS_DISPLAY_LIMIT = 12;
   const CASE_DISPLAY_LIMIT = 20;
@@ -338,7 +349,11 @@ export default function InfractionsPage() {
                 <div key={`${item.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
                   <p className="font-semibold">{item.primary}</p>
                   {item.detail ? <p className="text-[var(--ink-soft)]">{item.detail}</p> : null}
-                  {item.occurredAt ? <p className="text-xs text-[var(--ink-soft)]">{item.occurredAt}</p> : null}
+                  {item.occurredAt ? (
+                    <p className="text-xs text-[var(--ink-soft)]">
+                      Recorded: {formatTimestamp(item.occurredAt) ?? item.occurredAt}
+                    </p>
+                  ) : null}
                 </div>
               ))}
               {!data.prc.bans.length ? <p className="text-[var(--ink-soft)]">No active bans returned by PRC.</p> : null}
@@ -444,6 +459,9 @@ export default function InfractionsPage() {
                 </div>
                 <p className="text-[var(--ink-soft)]">Target: {item.target}</p>
                 <p className="text-xs text-[var(--ink-soft)]">Issued by: {item.issuer}</p>
+                <p className="text-xs text-[var(--ink-soft)]">
+                  Logged: {formatTimestamp(item.createdAt) ?? item.createdAt}
+                </p>
               </div>
             ))}
             {!data.cases.length ? <p className="text-[var(--ink-soft)]">No infractions logged yet.</p> : null}
