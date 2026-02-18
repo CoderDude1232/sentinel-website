@@ -7,22 +7,38 @@ function normalizedOrigin(value: string): string {
   return value.trim().replace(/\/+$/, "").toLowerCase();
 }
 
-function expectedOrigin(request: NextRequest): string {
-  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (configured) {
-    try {
-      return new URL(configured).origin;
-    } catch {
-      return request.nextUrl.origin;
-    }
+function addOrigin(origins: Set<string>, value: string | null | undefined) {
+  if (!value) {
+    return;
   }
-  return request.nextUrl.origin;
+  try {
+    origins.add(normalizedOrigin(new URL(value).origin));
+  } catch {
+    // Ignore invalid origin values.
+  }
+}
+
+function allowedOrigins(request: NextRequest): Set<string> {
+  const origins = new Set<string>();
+  addOrigin(origins, request.nextUrl.origin);
+  addOrigin(origins, process.env.NEXT_PUBLIC_APP_URL?.trim());
+  addOrigin(origins, process.env.APP_URL?.trim());
+
+  const forwardedHost = request.headers.get("x-forwarded-host")?.trim();
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.trim() || "https";
+  if (forwardedHost) {
+    addOrigin(origins, `${forwardedProto}://${forwardedHost}`);
+  }
+
+  return origins;
 }
 
 export function validateTrustedOrigin(request: NextRequest): string | null {
-  const expected = expectedOrigin(request);
+  const allowed = allowedOrigins(request);
+  const isAllowed = (value: string): boolean => allowed.has(normalizedOrigin(value));
+
   const origin = request.headers.get("origin");
-  if (origin && normalizedOrigin(origin) === normalizedOrigin(expected)) {
+  if (origin && isAllowed(origin)) {
     return null;
   }
 
@@ -30,7 +46,7 @@ export function validateTrustedOrigin(request: NextRequest): string | null {
   if (referer) {
     try {
       const refererOrigin = new URL(referer).origin;
-      if (normalizedOrigin(refererOrigin) === normalizedOrigin(expected)) {
+      if (isAllowed(refererOrigin)) {
         return null;
       }
     } catch {
@@ -41,7 +57,7 @@ export function validateTrustedOrigin(request: NextRequest): string | null {
   if (!origin && !referer) {
     return "Missing request origin.";
   }
-  if (origin && normalizedOrigin(origin) !== normalizedOrigin(expected)) {
+  if (origin && !isAllowed(origin)) {
     return "Invalid request origin.";
   }
   return "Invalid request referer.";

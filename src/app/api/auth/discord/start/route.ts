@@ -6,12 +6,6 @@ import {
 } from "@/lib/session";
 import { validateTrustedOrigin } from "@/lib/api-security";
 
-function redirectToLogin(request: NextRequest, error: string) {
-  const url = new URL("/login", request.url);
-  url.searchParams.set("error", error);
-  return NextResponse.redirect(url);
-}
-
 function redirectToAccessDenied(request: NextRequest, reason: string) {
   const url = new URL("/access-denied", request.url);
   url.searchParams.set("reason", reason);
