@@ -5,7 +5,6 @@ import {
   DISCORD_OAUTH_INTENT_COOKIE_NAME,
   shouldUseSecureCookies,
 } from "@/lib/session";
-import { validateTrustedOrigin } from "@/lib/api-security";
 import { getDiscordAuthorizeUrl } from "@/lib/discord";
 
 function redirectToAccessDenied(request: NextRequest, reason: string) {
@@ -14,12 +13,7 @@ function redirectToAccessDenied(request: NextRequest, reason: string) {
   return NextResponse.redirect(url);
 }
 
-export async function POST(request: NextRequest) {
-  const originError = validateTrustedOrigin(request, { allowMissingHeaders: true });
-  if (originError) {
-    return redirectToAccessDenied(request, "oauth_intent");
-  }
-
+export async function POST() {
   const state = createOAuthState();
   const response = NextResponse.redirect(getDiscordAuthorizeUrl(state), 303);
   response.cookies.set(DISCORD_OAUTH_STATE_COOKIE_NAME, state, {

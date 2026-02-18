@@ -76,7 +76,7 @@ export default function RootLayout({
         {children}
         <div
           aria-label={`Sentinel version ${appVersion}`}
-          className="pointer-events-none fixed bottom-2 left-3 z-10 text-[10px] tracking-[0.1em] text-[rgba(255,255,255,0.38)] sm:bottom-3 sm:left-4 sm:text-xs"
+          className="pointer-events-none fixed bottom-3 right-3 z-[9999] rounded-full border border-[rgba(255,255,255,0.2)] bg-[rgba(7,7,9,0.78)] px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-[rgba(255,255,255,0.72)] backdrop-blur-md sm:bottom-4 sm:right-4 sm:text-xs"
         >
           {appVersion}
         </div>
