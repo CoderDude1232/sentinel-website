@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { AmbientBackdrop } from "@/components/ambient-backdrop";
 import { DevtoolsGuard } from "@/components/devtools-guard";
 import { GlobalNavbar } from "@/components/global-navbar";
+import packageJson from "../../package.json";
 import "./globals.css";
 
 function resolveAppUrl(): string {
@@ -20,6 +21,7 @@ function resolveAppUrl(): string {
 }
 
 const appUrl = resolveAppUrl();
+const appVersion = `v${packageJson.version}`;
 
 export const viewport: Viewport = {
   themeColor: "#b11226",
@@ -72,6 +74,12 @@ export default function RootLayout({
         <AmbientBackdrop />
         <GlobalNavbar />
         {children}
+        <div
+          aria-label={`Sentinel version ${appVersion}`}
+          className="pointer-events-none fixed bottom-2 left-3 z-10 text-[10px] tracking-[0.1em] text-[rgba(255,255,255,0.38)] sm:bottom-3 sm:left-4 sm:text-xs"
+        >
+          {appVersion}
+        </div>
       </body>
     </html>
   );

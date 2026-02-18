@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   createOAuthState,
+  DISCORD_OAUTH_STATE_COOKIE_NAME,
   DISCORD_OAUTH_INTENT_COOKIE_NAME,
   shouldUseSecureCookies,
 } from "@/lib/session";
 import { validateTrustedOrigin } from "@/lib/api-security";
+import { getDiscordAuthorizeUrl } from "@/lib/discord";
 
 function redirectToAccessDenied(request: NextRequest, reason: string) {
   const url = new URL("/access-denied", request.url);
@@ -18,13 +20,21 @@ export async function POST(request: NextRequest) {
     return redirectToAccessDenied(request, "oauth_intent");
   }
 
-  const response = NextResponse.redirect(new URL("/api/auth/discord/login", request.url), 303);
-  response.cookies.set(DISCORD_OAUTH_INTENT_COOKIE_NAME, createOAuthState(), {
+  const state = createOAuthState();
+  const response = NextResponse.redirect(getDiscordAuthorizeUrl(state), 303);
+  response.cookies.set(DISCORD_OAUTH_STATE_COOKIE_NAME, state, {
+    httpOnly: true,
+    secure: shouldUseSecureCookies(),
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 10,
+  });
+  response.cookies.set(DISCORD_OAUTH_INTENT_COOKIE_NAME, "", {
     httpOnly: true,
     secure: shouldUseSecureCookies(),
     sameSite: "strict",
     path: "/",
-    maxAge: 60 * 2,
+    maxAge: 0,
   });
   return response;
 }

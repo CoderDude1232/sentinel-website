@@ -21,7 +21,7 @@ function shouldEnableGuard(): boolean {
   }
   const explicit = process.env.NEXT_PUBLIC_DEVTOOLS_GUARD_ENABLED?.toLowerCase();
   if (!explicit) {
-    return true;
+    return false;
   }
   return explicit === "1" || explicit === "true" || explicit === "yes" || explicit === "on";
 }
