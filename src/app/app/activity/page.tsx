@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 
 type ActivityResponse = {
   kpis: {
@@ -24,6 +25,13 @@ type ActivityResponse = {
   error?: string;
 };
 
+type PrcLogItem = {
+  primary: string;
+  secondary: string | null;
+  detail: string | null;
+  occurredAt: string | null;
+};
+
 function formatDuration(seconds: number | null): string {
   if (seconds === null) {
     return "N/A";
@@ -33,30 +41,57 @@ function formatDuration(seconds: number | null): string {
   return `${min}m ${sec}s`;
 }
 
+function formatTimestamp(value: string | null | undefined): string {
+  if (!value) {
+    return "Timestamp unavailable";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString();
+}
+
 export default function ActivityPage() {
-  const LEADERBOARD_DISPLAY_LIMIT = 16;
-  const COMMAND_LOG_DISPLAY_LIMIT = 10;
+  const LEADERBOARD_DISPLAY_LIMIT = 12;
+  const PRC_FEED_DISPLAY_LIMIT = 6;
 
   const [data, setData] = useState<ActivityResponse | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const load = useCallback(async () => {
-    const response = await fetch("/api/panels/activity", { cache: "no-store" });
-    const payload = (await response.json().catch(() => ({}))) as ActivityResponse;
-    if (!response.ok) {
-      throw new Error(payload.error ?? "Failed to load activity data");
+  const load = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (!silent) {
+      setLoading(true);
+      setError("");
     }
-    setData(payload);
+
+    try {
+      const response = await fetch("/api/panels/activity", { cache: "no-store" });
+      const payload = (await response.json().catch(() => ({}))) as ActivityResponse;
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to load activity data");
+      }
+      setData(payload);
+    } catch (fetchError) {
+      if (!silent) {
+        setError(fetchError instanceof Error ? fetchError.message : "Failed to load activity data");
+      }
+    } finally {
+      if (!silent) {
+        setLoading(false);
+      }
+    }
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void load().catch((fetchError) => {
-        setError(fetchError instanceof Error ? fetchError.message : "Failed to load activity data");
-      });
-    }, 0);
-    return () => window.clearTimeout(timer);
+    void load();
   }, [load]);
+
+  useAutoRefresh(
+    () => load({ silent: true }),
+    { intervalMs: 20000, runImmediately: false, onlyWhenVisible: true },
+  );
 
   const kpis = data
     ? [
@@ -75,107 +110,147 @@ export default function ActivityPage() {
         { label: "Active staff now", value: "--" },
       ];
 
+  const prcFeeds: Array<{ title: string; items: PrcLogItem[]; emptyLabel: string }> = [
+    {
+      title: "Recent command logs",
+      items: data?.prc?.recent.commands ?? [],
+      emptyLabel: "No PRC command logs available.",
+    },
+    {
+      title: "Recent join logs",
+      items: data?.prc?.recent.joins ?? [],
+      emptyLabel: "No PRC join logs available.",
+    },
+    {
+      title: "Recent kill logs",
+      items: data?.prc?.recent.kills ?? [],
+      emptyLabel: "No PRC kill logs available.",
+    },
+  ];
+
   return (
     <div>
-      <span className="kicker">Activity</span>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">Staff Activity Intelligence</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <span className="kicker">Activity</span>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Staff Activity Intelligence</h1>
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">
+            Live staff metrics, leaderboard performance, and PRC telemetry in one view.
+          </p>
+          {data?.prc?.fetchedAt ? (
+            <p className="mt-1 text-xs text-[var(--ink-soft)]">PRC sync: {formatTimestamp(data.prc.fetchedAt)}</p>
+          ) : null}
+        </div>
+        <button className="button-secondary px-4 py-2 text-sm" type="button" onClick={() => void load()} disabled={loading}>
+          {loading ? "Refreshing..." : "Refresh now"}
+        </button>
+      </div>
 
       {error ? (
-        <p className="mt-4 rounded-lg border border-[rgba(216,29,56,0.35)] bg-[rgba(216,29,56,0.12)] px-3 py-2 text-sm">
+        <p className="mt-4 rounded-lg border border-[rgba(216,29,56,0.35)] bg-[rgba(216,29,56,0.12)] px-3 py-2 text-sm text-[#ffd4dc]">
           {error}
         </p>
       ) : null}
 
       <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((item) => (
-          <article key={item.label} className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+          <article key={item.label} className="dashboard-metric-card p-4">
             <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">{item.label}</p>
             <p className="mt-1 text-2xl font-semibold">{item.value}</p>
           </article>
         ))}
       </section>
 
-      <section className="mt-5 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
-        <h2 className="text-lg font-semibold tracking-tight">Performance leaderboard</h2>
-        <div className="mt-3 overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
-              <tr>
-                <th className="py-2 pr-4">Staff</th>
-                <th className="py-2 pr-4">Sessions hosted</th>
-                <th className="py-2 pr-4">Actions</th>
-                <th className="py-2">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data?.leaderboard ?? []).slice(0, LEADERBOARD_DISPLAY_LIMIT).map((member) => (
-                <tr key={member.name} className="border-t border-[var(--line)]">
-                  <td className="py-2 pr-4">{member.name}</td>
-                  <td className="py-2 pr-4">{member.sessions}</td>
-                  <td className="py-2 pr-4">{member.actions}</td>
-                  <td className="py-2">{member.score}</td>
+      <section className="mt-5 grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
+        <article className="dashboard-card p-4 sm:p-5">
+          <h2 className="text-lg font-semibold tracking-tight">Performance leaderboard</h2>
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">Top staff by sessions, actions, and overall score.</p>
+          <div className="mt-3 overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                <tr>
+                  <th className="py-2 pr-4">Staff</th>
+                  <th className="py-2 pr-4">Sessions</th>
+                  <th className="py-2 pr-4">Actions</th>
+                  <th className="py-2">Score</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {(data?.leaderboard?.length ?? 0) > LEADERBOARD_DISPLAY_LIMIT ? (
-            <p className="pt-2 text-xs text-[var(--ink-soft)]">
-              Showing {LEADERBOARD_DISPLAY_LIMIT} of {data?.leaderboard.length ?? 0} leaderboard entries.
-            </p>
-          ) : null}
-          {!data?.leaderboard?.length ? (
-            <p className="py-4 text-sm text-[var(--ink-soft)]">No activity entries yet.</p>
-          ) : null}
-        </div>
-      </section>
+              </thead>
+              <tbody>
+                {(data?.leaderboard ?? []).slice(0, LEADERBOARD_DISPLAY_LIMIT).map((member) => (
+                  <tr key={member.name} className="border-t border-[var(--line)]">
+                    <td className="py-2 pr-4">{member.name}</td>
+                    <td className="py-2 pr-4">{member.sessions}</td>
+                    <td className="py-2 pr-4">{member.actions}</td>
+                    <td className="py-2">{member.score}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {(data?.leaderboard?.length ?? 0) > LEADERBOARD_DISPLAY_LIMIT ? (
+              <p className="pt-2 text-xs text-[var(--ink-soft)]">
+                Showing {LEADERBOARD_DISPLAY_LIMIT} of {data?.leaderboard.length ?? 0} leaderboard entries.
+              </p>
+            ) : null}
+            {!data?.leaderboard?.length ? (
+              <p className="py-4 text-sm text-[var(--ink-soft)]">No activity entries yet.</p>
+            ) : null}
+          </div>
+        </article>
 
-      <section className="mt-5 grid gap-4 md:grid-cols-2">
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
-          <h2 className="text-lg font-semibold tracking-tight">Live PRC telemetry</h2>
+        <article className="dashboard-card p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold tracking-tight">Live PRC telemetry</h2>
+            <span className="rounded-full border border-[var(--line)] px-2 py-0.5 text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+              {data?.prc?.connected ? "Connected" : "Disconnected"}
+            </span>
+          </div>
           {!data?.prc?.connected ? (
-            <p className="mt-3 text-sm text-[var(--ink-soft)]">Connect ER:LC to view join/kill/command/vehicle logs.</p>
+            <p className="mt-3 text-sm text-[var(--ink-soft)]">Connect ER:LC to view join, kill, command, and vehicle logs.</p>
           ) : (
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
+              <div className="dashboard-metric-card p-3 text-sm">
                 <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Join logs</p>
                 <p className="mt-1 text-xl font-semibold">{data.prc.counts.joins}</p>
               </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
+              <div className="dashboard-metric-card p-3 text-sm">
                 <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Kill logs</p>
                 <p className="mt-1 text-xl font-semibold">{data.prc.counts.kills}</p>
               </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
+              <div className="dashboard-metric-card p-3 text-sm">
                 <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Command logs</p>
                 <p className="mt-1 text-xl font-semibold">{data.prc.counts.commands}</p>
               </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
+              <div className="dashboard-metric-card p-3 text-sm">
                 <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Active vehicles</p>
                 <p className="mt-1 text-xl font-semibold">{data.prc.counts.vehicles}</p>
               </div>
             </div>
           )}
         </article>
+      </section>
 
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
-          <h2 className="text-lg font-semibold tracking-tight">Recent command logs</h2>
-          {((data?.prc?.recent.commands.length ?? 0) > COMMAND_LOG_DISPLAY_LIMIT) ? (
-            <p className="mt-1 text-xs text-[var(--ink-soft)]">
-              Showing {COMMAND_LOG_DISPLAY_LIMIT} of {data?.prc?.recent.commands.length ?? 0} command logs.
-            </p>
-          ) : null}
-          <div className="mt-3 max-h-[460px] space-y-2 overflow-y-auto pr-1 text-sm">
-            {(data?.prc?.recent.commands ?? []).slice(0, COMMAND_LOG_DISPLAY_LIMIT).map((item, index) => (
-              <div key={`${item.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="font-semibold">{item.primary}</p>
-                {item.detail ? <p className="text-[var(--ink-soft)]">{item.detail}</p> : null}
-                {item.occurredAt ? <p className="text-xs text-[var(--ink-soft)]">{item.occurredAt}</p> : null}
-              </div>
-            ))}
-            {!(data?.prc?.recent.commands.length) ? (
-              <p className="text-[var(--ink-soft)]">No PRC command logs available.</p>
+      <section className="mt-5 grid gap-4 xl:grid-cols-3">
+        {prcFeeds.map((feed) => (
+          <article key={feed.title} className="dashboard-card p-4">
+            <h2 className="text-base font-semibold tracking-tight">{feed.title}</h2>
+            {feed.items.length > PRC_FEED_DISPLAY_LIMIT ? (
+              <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                Showing {PRC_FEED_DISPLAY_LIMIT} of {feed.items.length}
+              </p>
             ) : null}
-          </div>
-        </article>
+            <div className="mt-3 max-h-[340px] space-y-2 overflow-y-auto pr-1 text-sm">
+              {feed.items.slice(0, PRC_FEED_DISPLAY_LIMIT).map((item, index) => (
+                <div key={`${feed.title}-${item.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-3">
+                  <p className="font-semibold">{item.primary}</p>
+                  {item.secondary ? <p className="text-xs text-[var(--ink-soft)]">{item.secondary}</p> : null}
+                  {item.detail ? <p className="mt-1 text-xs text-[var(--ink-soft)]">{item.detail}</p> : null}
+                  <p className="mt-1 text-[11px] text-[var(--ink-soft)]">{formatTimestamp(item.occurredAt)}</p>
+                </div>
+              ))}
+              {!feed.items.length ? <p className="text-[var(--ink-soft)]">{feed.emptyLabel}</p> : null}
+            </div>
+          </article>
+        ))}
       </section>
     </div>
   );

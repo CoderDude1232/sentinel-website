@@ -1,7 +1,6 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CollapsibleSection } from "@/components/collapsible-section";
 import { UiSelect } from "@/components/ui-select";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 
@@ -29,10 +28,21 @@ type AuditResponse = {
   error?: string;
 };
 
+function formatTimestamp(value: string | null | undefined): string {
+  if (!value) {
+    return "Timestamp unavailable";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return parsed.toLocaleString();
+}
+
 export default function LogsPage() {
   const DISPLAY_LIMITS = {
     events: 40,
-    prcColumn: 8,
+    prcColumn: 6,
   } as const;
 
   const [events, setEvents] = useState<AuditEvent[]>([]);
@@ -126,18 +136,28 @@ export default function LogsPage() {
     [events, DISPLAY_LIMITS.events],
   );
 
+  const hasActiveFilters = Boolean(moduleFilter || actionFilter || actorFilter);
+
   return (
     <div>
       <span className="kicker">Audit</span>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">Immutable Audit Stream</h1>
+      <h1 className="mt-3 text-3xl font-semibold tracking-tight">Audit and Activity Logs</h1>
       <p className="mt-2 text-sm text-[var(--ink-soft)]">
-        Filter by module/action/actor and export audit history with before/after diffs.
+        Filter audit history, inspect change payloads, and monitor live PRC logs without leaving the dashboard.
       </p>
-      {message ? <p className="mt-2 text-sm text-[var(--ink-soft)]">{message}</p> : null}
+      {message ? (
+        <p className="mt-3 rounded-lg border border-[rgba(216,29,56,0.35)] bg-[rgba(216,29,56,0.12)] px-3 py-2 text-sm text-[#ffd4dc]">
+          {message}
+        </p>
+      ) : null}
 
-      <section className="mt-5 space-y-3">
-        <CollapsibleSection title="Filters" subtitle="Narrow the event stream and export matching logs.">
-          <div className="grid gap-2 sm:grid-cols-4">
+      <section className="mt-5 space-y-4">
+        <article className="dashboard-card p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold tracking-tight">Filters</h2>
+            <span className="text-xs text-[var(--ink-soft)]">{events.length} matching events</span>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <UiSelect
               value={moduleFilter}
               onChange={(value) => setModuleFilter(value)}
@@ -153,53 +173,90 @@ export default function LogsPage() {
               onChange={(value) => setActorFilter(value)}
               options={[{ value: "", label: "All actors" }, ...actors.map((item) => ({ value: item, label: item }))]}
             />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
             <button className="button-secondary px-4 py-2 text-sm" type="button" onClick={() => void load()} disabled={loading}>
               {loading ? "Refreshing..." : "Refresh"}
             </button>
-          </div>
-          <div className="mt-3">
+            <button
+              className="button-secondary px-4 py-2 text-sm"
+              type="button"
+              disabled={!hasActiveFilters}
+              onClick={() => {
+                setModuleFilter("");
+                setActionFilter("");
+                setActorFilter("");
+              }}
+            >
+              Clear filters
+            </button>
             <a href={exportHref} className="button-secondary px-4 py-2 text-sm">
               Export CSV
             </a>
           </div>
-        </CollapsibleSection>
+        </article>
 
-        <CollapsibleSection title="Event stream" subtitle="Latest events first" meta={String(events.length)}>
-          {events.length > visibleEvents.length ? (
-            <p className="mb-2 text-xs text-[var(--ink-soft)]">
-              Showing {visibleEvents.length} of {events.length} events.
-            </p>
-          ) : null}
-          <div className="max-h-[780px] space-y-2 overflow-y-auto pr-1 text-sm">
-            {visibleEvents.map((event) => (
-              <article key={event.id.toString()} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold">{event.module} · {event.action}</p>
-                  <span className="text-xs text-[var(--ink-soft)]">{new Date(event.createdAt).toLocaleString()}</span>
-                </div>
-                <p className="mt-1 text-xs text-[var(--ink-soft)]">
-                  Actor: {event.actor}{event.subject ? ` • Subject: ${event.subject}` : ""}
-                </p>
-                {event.beforeState || event.afterState ? (
-                  <pre className="mt-2 overflow-x-auto rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-2 text-xs text-[var(--ink-soft)]">
-                    {JSON.stringify({ before: event.beforeState, after: event.afterState, metadata: event.metadata }, null, 2)}
-                  </pre>
-                ) : null}
-              </article>
-            ))}
+        <article className="dashboard-card p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold tracking-tight">Event stream</h2>
+            <span className="text-xs text-[var(--ink-soft)]">
+              Showing {Math.min(visibleEvents.length, events.length)} of {events.length}
+            </span>
+          </div>
+          <div className="mt-3 max-h-[720px] space-y-2 overflow-y-auto pr-1 text-sm">
+            {visibleEvents.map((event) => {
+              const hasPayload = Boolean(event.beforeState || event.afterState || event.metadata);
+              return (
+                <article key={event.id.toString()} className="dashboard-feed-item rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.025)] p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold">{event.module} � {event.action}</p>
+                    <span className="text-xs text-[var(--ink-soft)]">{formatTimestamp(event.createdAt)}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-full border border-[var(--line)] px-2 py-0.5 text-[var(--ink-soft)]">
+                      Actor: {event.actor}
+                    </span>
+                    {event.subject ? (
+                      <span className="rounded-full border border-[var(--line)] px-2 py-0.5 text-[var(--ink-soft)]">
+                        Subject: {event.subject}
+                      </span>
+                    ) : null}
+                    <span className="rounded-full border border-[var(--line)] px-2 py-0.5 text-[var(--ink-soft)]">
+                      Event #{event.id}
+                    </span>
+                  </div>
+                  {hasPayload ? (
+                    <details className="mt-2 rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                      <summary className="cursor-pointer px-2 py-1.5 text-xs text-[var(--ink-soft)]">View payload</summary>
+                      <pre className="max-h-[220px] overflow-auto border-t border-[var(--line)] px-2 py-2 text-xs text-[var(--ink-soft)]">
+                        {JSON.stringify({ before: event.beforeState, after: event.afterState, metadata: event.metadata }, null, 2)}
+                      </pre>
+                    </details>
+                  ) : null}
+                </article>
+              );
+            })}
             {!events.length ? <p className="text-[var(--ink-soft)]">No audit events match current filters.</p> : null}
           </div>
-        </CollapsibleSection>
+        </article>
 
-        <CollapsibleSection
-          title="PRC log retrieval"
-          subtitle="Live join, kill, and command logs from ER:LC."
-          meta={prcLogs.connected ? "Connected" : "Not connected"}
-        >
+        <article className="dashboard-card p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold tracking-tight">PRC log retrieval</h2>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-[var(--line)] px-2 py-0.5 text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                {prcLogs.connected ? "Connected" : "Not connected"}
+              </span>
+              {prcLogs.fetchedAt ? (
+                <span className="text-xs text-[var(--ink-soft)]">Synced {formatTimestamp(prcLogs.fetchedAt)}</span>
+              ) : null}
+            </div>
+          </div>
+
           {!prcLogs.connected ? (
-            <p className="text-sm text-[var(--ink-soft)]">Connect ER:LC to retrieve live PRC logs here.</p>
+            <p className="mt-3 text-sm text-[var(--ink-soft)]">Connect ER:LC to retrieve live PRC logs here.</p>
           ) : (
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
               {[
                 { title: "Join logs", items: prcLogs.joinLogs },
                 { title: "Kill logs", items: prcLogs.killLogs },
@@ -212,12 +269,13 @@ export default function LogsPage() {
                       Showing {DISPLAY_LIMITS.prcColumn} of {column.items.length}
                     </p>
                   ) : null}
-                  <div className="mt-2 max-h-[320px] space-y-2 overflow-y-auto pr-1 text-xs">
+                  <div className="mt-2 max-h-[300px] space-y-2 overflow-y-auto pr-1 text-xs">
                     {column.items.slice(0, DISPLAY_LIMITS.prcColumn).map((item, index) => (
-                      <div key={`${item.primary}-${index}`} className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-2">
+                      <div key={`${column.title}-${item.primary}-${index}`} className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-2">
                         <p className="font-semibold text-sm">{item.primary}</p>
                         {item.secondary ? <p className="text-[var(--ink-soft)]">{item.secondary}</p> : null}
                         {item.detail ? <p className="text-[var(--ink-soft)]">{item.detail}</p> : null}
+                        <p className="mt-1 text-[10px] text-[var(--ink-soft)]">{formatTimestamp(item.occurredAt)}</p>
                       </div>
                     ))}
                     {!column.items.length ? <p className="text-[var(--ink-soft)]">No entries.</p> : null}
@@ -226,9 +284,8 @@ export default function LogsPage() {
               ))}
             </div>
           )}
-        </CollapsibleSection>
+        </article>
       </section>
     </div>
   );
 }
-
