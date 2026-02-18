@@ -456,7 +456,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (policy.requiresApproval) {
+    if (policy.requiresApproval && !isQuickAction) {
       const queued = await createCommandExecution({
         userId: user.id,
         command,
