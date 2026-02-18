@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
+import { forbidden, validateMutationRequest } from "@/lib/api-security";
 import { fetchErlcPlayers, fetchErlcServerSnapshot, runErlcCommand } from "@/lib/erlc-api";
 import { getUserErlcKey } from "@/lib/erlc-store";
 import { type RobloxIdentity, verifyRobloxUsernames } from "@/lib/roblox-api";
@@ -253,6 +254,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const securityError = validateMutationRequest(request);
+  if (securityError) {
+    return forbidden(securityError);
+  }
+
   const user = getSessionUserFromRequest(request);
   if (!user) {
     return unauthorized();
@@ -297,6 +303,11 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const securityError = validateMutationRequest(request);
+  if (securityError) {
+    return forbidden(securityError);
+  }
+
   const user = getSessionUserFromRequest(request);
   if (!user) {
     return unauthorized();

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { UiSelect } from "@/components/ui-select";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
+import { createTrustedHeaders } from "@/lib/client-security";
 
 type ModerationCase = {
   id: number;
@@ -328,7 +329,7 @@ export default function ModerationPage() {
     try {
       const response = await fetch("/api/panels/commands", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: createTrustedHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           command,
           targetPlayer: resolvedTarget,

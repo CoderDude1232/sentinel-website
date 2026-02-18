@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { UiSelect } from "@/components/ui-select";
 
 type BotIntegrationResponse = {
@@ -263,9 +262,11 @@ export function DiscordBotPanel() {
         <div className="mt-3 rounded-lg border border-[rgba(216,29,56,0.45)] bg-[rgba(216,29,56,0.12)] p-3 text-sm text-[var(--ink-strong)]">
           Discord guild permission is missing or expired. Re-auth to grant "View your servers".
           <div className="mt-2">
-            <Link href="/api/auth/discord/login" className="button-secondary px-3 py-2 text-sm">
-              Reconnect Discord OAuth
-            </Link>
+            <form action="/api/auth/discord/start" method="POST">
+              <button type="submit" className="button-secondary px-3 py-2 text-sm">
+                Reconnect Discord OAuth
+              </button>
+            </form>
           </div>
         </div>
       ) : null}

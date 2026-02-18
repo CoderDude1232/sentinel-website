@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
+import { CSRF_COOKIE_NAME } from "@/lib/session";
 import { fetchErlcServerSnapshot } from "@/lib/erlc-api";
 import { getUserErlcKey } from "@/lib/erlc-store";
 import {
@@ -112,11 +113,15 @@ async function dispatchSessionAnnouncement(
   const command = ":announce";
   const commandText = `${command} ${announcementText}`;
   const commandUrl = new URL("/api/panels/commands", request.nextUrl.origin).toString();
+  const csrfToken = request.cookies.get(CSRF_COOKIE_NAME)?.value ?? "";
   const commandResponse = await fetch(commandUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Cookie: request.headers.get("cookie") ?? "",
+      Origin: request.nextUrl.origin,
+      "x-sentinel-client": "dashboard",
+      ...(csrfToken ? { "x-sentinel-csrf": csrfToken } : {}),
     },
     body: JSON.stringify({
       command,

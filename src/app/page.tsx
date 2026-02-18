@@ -71,9 +71,11 @@ export default function Home() {
             <Link href="/app/onboarding" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
               Connect ER:LC Server
             </Link>
-            <Link href="/api/auth/discord/login" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
-              Sign In with Discord
-            </Link>
+            <form action="/api/auth/discord/start" method="POST" className="w-full sm:w-auto">
+              <button type="submit" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
+                Sign In with Discord
+              </button>
+            </form>
           </div>
 
           <p className="mt-7 text-base text-[var(--ink-soft)]">

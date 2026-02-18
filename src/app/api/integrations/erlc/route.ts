@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
+import { forbidden, validateMutationRequest } from "@/lib/api-security";
 import { getUserErlcKey, upsertUserErlcKey, deleteUserErlcKey } from "@/lib/erlc-store";
 import { testErlcServerKey } from "@/lib/erlc-api";
 
@@ -59,6 +60,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const securityError = validateMutationRequest(request);
+  if (securityError) {
+    return forbidden(securityError);
+  }
+
   const user = getSessionUserFromRequest(request);
   if (!user) {
     return unauthorized();
@@ -105,6 +111,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const securityError = validateMutationRequest(request);
+  if (securityError) {
+    return forbidden(securityError);
+  }
+
   const user = getSessionUserFromRequest(request);
   if (!user) {
     return unauthorized();

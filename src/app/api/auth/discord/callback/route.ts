@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { exchangeCodeForTokenBundle, fetchDiscordUser } from "@/lib/discord";
 import { upsertDiscordOAuthToken } from "@/lib/discord-store";
 import {
+  createCsrfToken,
   createSessionToken,
+  CSRF_COOKIE_NAME,
+  DISCORD_OAUTH_INTENT_COOKIE_NAME,
   DISCORD_OAUTH_STATE_COOKIE_NAME,
   SESSION_COOKIE_NAME,
   shouldUseSecureCookies,
@@ -25,6 +28,13 @@ export async function GET(request: NextRequest) {
       httpOnly: true,
       secure: shouldUseSecureCookies(),
       sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
+    response.cookies.set(DISCORD_OAUTH_INTENT_COOKIE_NAME, "", {
+      httpOnly: true,
+      secure: shouldUseSecureCookies(),
+      sameSite: "strict",
       path: "/",
       maxAge: 0,
     });
@@ -56,6 +66,20 @@ export async function GET(request: NextRequest) {
       path: "/",
       maxAge: 0,
     });
+    response.cookies.set(DISCORD_OAUTH_INTENT_COOKIE_NAME, "", {
+      httpOnly: true,
+      secure: shouldUseSecureCookies(),
+      sameSite: "strict",
+      path: "/",
+      maxAge: 0,
+    });
+    response.cookies.set(CSRF_COOKIE_NAME, createCsrfToken(), {
+      httpOnly: false,
+      secure: shouldUseSecureCookies(),
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
 
     return response;
   } catch {
@@ -64,6 +88,13 @@ export async function GET(request: NextRequest) {
       httpOnly: true,
       secure: shouldUseSecureCookies(),
       sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
+    response.cookies.set(DISCORD_OAUTH_INTENT_COOKIE_NAME, "", {
+      httpOnly: true,
+      secure: shouldUseSecureCookies(),
+      sameSite: "strict",
       path: "/",
       maxAge: 0,
     });

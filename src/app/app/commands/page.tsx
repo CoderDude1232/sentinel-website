@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { UiSelect } from "@/components/ui-select";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
+import { createTrustedHeaders } from "@/lib/client-security";
 
 type CommandPolicy = {
   allowlist: string[];
@@ -179,7 +180,7 @@ export default function CommandsPage() {
     try {
       const response = await fetch("/api/panels/commands", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: createTrustedHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           allowlist,
           requiresApproval: policy.requiresApproval,
@@ -214,7 +215,7 @@ export default function CommandsPage() {
     try {
       const response = await fetch("/api/panels/commands", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: createTrustedHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ command, targetPlayer, notes }),
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string };

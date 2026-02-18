@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { UiSelect } from "@/components/ui-select";
+import { createTrustedHeaders } from "@/lib/client-security";
 
 type OnboardingResponse = {
   steps?: Array<{ step: string; status: "Complete" | "In progress" | "Pending"; detail: string }>;
@@ -107,7 +108,7 @@ export default function OnboardingPage() {
     try {
       const response = await fetch("/api/integrations/erlc", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: createTrustedHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ serverKey: serverKeyInput }),
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string };

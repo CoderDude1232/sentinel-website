@@ -1,7 +1,17 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import {
+  SESSION_COOKIE_NAME,
+  DISCORD_OAUTH_STATE_COOKIE_NAME,
+  DISCORD_OAUTH_INTENT_COOKIE_NAME,
+  CSRF_COOKIE_NAME,
+} from "@/lib/security-constants";
 
-export const SESSION_COOKIE_NAME = "sentinel_session";
-export const DISCORD_OAUTH_STATE_COOKIE_NAME = "sentinel_discord_oauth_state";
+export {
+  SESSION_COOKIE_NAME,
+  DISCORD_OAUTH_STATE_COOKIE_NAME,
+  DISCORD_OAUTH_INTENT_COOKIE_NAME,
+  CSRF_COOKIE_NAME,
+};
 
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
@@ -94,6 +104,10 @@ export function parseSessionToken(token: string | undefined): SessionPayload | n
 }
 
 export function createOAuthState(): string {
+  return randomBytes(24).toString("base64url");
+}
+
+export function createCsrfToken(): string {
   return randomBytes(24).toString("base64url");
 }
 

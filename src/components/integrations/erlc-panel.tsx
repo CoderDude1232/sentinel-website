@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { createTrustedHeaders } from "@/lib/client-security";
 
 type IntegrationState = {
   connected: boolean;
@@ -133,7 +134,7 @@ export function ErlcPanel() {
       try {
         const response = await fetch("/api/integrations/erlc", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: createTrustedHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ serverKey: serverKeyInput }),
         });
         const payload = (await response.json().catch(() => ({}))) as {
@@ -169,7 +170,10 @@ export function ErlcPanel() {
     setStatus({ kind: "idle", message: "" });
 
     try {
-      const response = await fetch("/api/integrations/erlc", { method: "DELETE" });
+      const response = await fetch("/api/integrations/erlc", {
+        method: "DELETE",
+        headers: createTrustedHeaders(),
+      });
       if (!response.ok) {
         const payload = (await response.json().catch(() => ({}))) as { error?: string };
         throw new Error(payload.error ?? "Failed to remove ER:LC key.");

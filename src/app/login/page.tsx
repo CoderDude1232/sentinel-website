@@ -8,6 +8,7 @@ type LoginPageProps = {
 
 const errorLabels: Record<string, string> = {
   invalid_state: "Login request expired or was invalid. Please try again.",
+  login_intent_required: "Start login from the Sentinel sign-in button.",
   oauth_failed: "Discord login failed. Please retry.",
 };
 
@@ -58,9 +59,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </>
           ) : (
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/api/auth/discord/login" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
-                Continue with Discord
-              </Link>
+              <form action="/api/auth/discord/start" method="POST" className="w-full sm:w-auto">
+                <button type="submit" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
+                  Continue with Discord
+                </button>
+              </form>
               <Link href="/" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
                 Back to Home
               </Link>

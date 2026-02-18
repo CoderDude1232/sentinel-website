@@ -1,0 +1,34 @@
+import { NextRequest, NextResponse } from "next/server";
+import {
+  createOAuthState,
+  DISCORD_OAUTH_INTENT_COOKIE_NAME,
+  shouldUseSecureCookies,
+} from "@/lib/session";
+import { validateTrustedOrigin } from "@/lib/api-security";
+
+function redirectToLogin(request: NextRequest, error: string) {
+  const url = new URL("/login", request.url);
+  url.searchParams.set("error", error);
+  return NextResponse.redirect(url);
+}
+
+export async function POST(request: NextRequest) {
+  const originError = validateTrustedOrigin(request);
+  if (originError) {
+    return redirectToLogin(request, "login_intent_required");
+  }
+
+  const response = NextResponse.redirect(new URL("/api/auth/discord/login", request.url), 303);
+  response.cookies.set(DISCORD_OAUTH_INTENT_COOKIE_NAME, createOAuthState(), {
+    httpOnly: true,
+    secure: shouldUseSecureCookies(),
+    sameSite: "strict",
+    path: "/",
+    maxAge: 60 * 2,
+  });
+  return response;
+}
+
+export async function GET(request: NextRequest) {
+  return redirectToLogin(request, "login_intent_required");
+}
