@@ -18,22 +18,43 @@ function addOrigin(origins: Set<string>, value: string | null | undefined) {
   }
 }
 
+function addOriginFromHost(origins: Set<string>, host: string | null | undefined, proto?: string | null) {
+  if (!host) {
+    return;
+  }
+  const trimmedHost = host.trim();
+  if (!trimmedHost) {
+    return;
+  }
+
+  if (proto) {
+    addOrigin(origins, `${proto}://${trimmedHost}`);
+  } else {
+    addOrigin(origins, `https://${trimmedHost}`);
+    addOrigin(origins, `http://${trimmedHost}`);
+  }
+}
+
 function allowedOrigins(request: NextRequest): Set<string> {
   const origins = new Set<string>();
   addOrigin(origins, request.nextUrl.origin);
   addOrigin(origins, process.env.NEXT_PUBLIC_APP_URL?.trim());
   addOrigin(origins, process.env.APP_URL?.trim());
 
+  addOriginFromHost(origins, request.headers.get("host"));
+
   const forwardedHost = request.headers.get("x-forwarded-host")?.trim();
   const forwardedProto = request.headers.get("x-forwarded-proto")?.trim() || "https";
-  if (forwardedHost) {
-    addOrigin(origins, `${forwardedProto}://${forwardedHost}`);
-  }
+  addOriginFromHost(origins, forwardedHost, forwardedProto);
 
   return origins;
 }
 
-export function validateTrustedOrigin(request: NextRequest): string | null {
+export function validateTrustedOrigin(
+  request: NextRequest,
+  options: { allowMissingHeaders?: boolean } = {},
+): string | null {
+  const allowMissingHeaders = options.allowMissingHeaders ?? false;
   const allowed = allowedOrigins(request);
   const isAllowed = (value: string): boolean => allowed.has(normalizedOrigin(value));
 
@@ -55,6 +76,9 @@ export function validateTrustedOrigin(request: NextRequest): string | null {
   }
 
   if (!origin && !referer) {
+    if (allowMissingHeaders) {
+      return null;
+    }
     return "Missing request origin.";
   }
   if (origin && !isAllowed(origin)) {

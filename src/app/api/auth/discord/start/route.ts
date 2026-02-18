@@ -13,7 +13,7 @@ function redirectToAccessDenied(request: NextRequest, reason: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const originError = validateTrustedOrigin(request);
+  const originError = validateTrustedOrigin(request, { allowMissingHeaders: true });
   if (originError) {
     return redirectToAccessDenied(request, "oauth_intent");
   }
