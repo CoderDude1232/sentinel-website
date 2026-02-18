@@ -7,6 +7,17 @@ type DashboardSummary = {
   cards: Array<{ title: string; value: string; details: string }>;
   feed: Array<{ time: string; label: string; level: string }>;
   nextActions: Array<{ label: string; href: string }>;
+  erlc?: {
+    keyConfigured: boolean;
+    connected: boolean;
+    serverName: string | null;
+    playerCount: number | null;
+    queueCount: number | null;
+    modCallCount: number | null;
+    commandLogCount: number | null;
+    endpoints: Record<string, { ok: boolean; status: number; latencyMs: number }> | null;
+    fetchedAt: string | null;
+  };
 };
 
 const emptySummary: DashboardSummary = {
@@ -38,6 +49,10 @@ function levelClass(level: string): string {
     return "dashboard-level dashboard-level-critical";
   }
   return "dashboard-level dashboard-level-info";
+}
+
+function endpointClass(ok: boolean): string {
+  return ok ? "dashboard-endpoint dashboard-endpoint-ok" : "dashboard-endpoint dashboard-endpoint-fail";
 }
 
 export default function AppOverviewPage() {
@@ -143,6 +158,69 @@ export default function AppOverviewPage() {
           </article>
         ))}
       </div>
+
+      <section className="dashboard-card dashboard-erlc-card p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-[var(--ink-soft)]">ER:LC integration</h2>
+            <p className="mt-1 text-sm text-[var(--ink-soft)]">
+              Live sync state and endpoint health from your connected server key.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/app/integrations" className="button-secondary px-3 py-2 text-sm">
+              Manage Integration
+            </Link>
+            <Link href="/app/commands" className="button-secondary px-3 py-2 text-sm">
+              Open Commands
+            </Link>
+          </div>
+        </div>
+        {!summary.erlc?.keyConfigured ? (
+          <p className="mt-3 rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm text-[var(--ink-soft)]">
+            No ER:LC key connected yet. Add your key in Integrations to enable live server telemetry.
+          </p>
+        ) : (
+          <>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              <article className="dashboard-card p-3">
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Status</p>
+                <p className="mt-1 text-sm font-semibold">{summary.erlc.connected ? "Connected" : "Disconnected"}</p>
+              </article>
+              <article className="dashboard-card p-3">
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Server</p>
+                <p className="mt-1 text-sm font-semibold">{summary.erlc.serverName ?? "Unknown"}</p>
+              </article>
+              <article className="dashboard-card p-3">
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Players</p>
+                <p className="mt-1 text-sm font-semibold">{summary.erlc.playerCount ?? "N/A"}</p>
+              </article>
+              <article className="dashboard-card p-3">
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Queue</p>
+                <p className="mt-1 text-sm font-semibold">{summary.erlc.queueCount ?? "N/A"}</p>
+              </article>
+              <article className="dashboard-card p-3">
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Mod calls</p>
+                <p className="mt-1 text-sm font-semibold">{summary.erlc.modCallCount ?? "N/A"}</p>
+              </article>
+            </div>
+            {summary.erlc.endpoints ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {Object.entries(summary.erlc.endpoints).map(([name, state]) => (
+                  <span key={name} className={endpointClass(state.ok)}>
+                    {name} · {state.status}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            {summary.erlc.fetchedAt ? (
+              <p className="mt-2 text-xs text-[var(--ink-soft)]">
+                Synced {new Date(summary.erlc.fetchedAt).toLocaleTimeString()}
+              </p>
+            ) : null}
+          </>
+        )}
+      </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <article className="dashboard-card p-4">
