@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
-import { fetchErlcServerSnapshot, runErlcCommand } from "@/lib/erlc-api";
+import { fetchErlcServerSnapshot } from "@/lib/erlc-api";
 import { getUserErlcKey } from "@/lib/erlc-store";
 import {
   createAuditEvent,
@@ -89,34 +89,76 @@ function inferApiError(payload: unknown): string | null {
   );
 }
 
-function asNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
+type CommandPanelResponse = {
+  error?: string;
+  queuedByCooldown?: boolean;
+  cooldownRemaining?: number;
+  execution?: {
+    result?: "Queued" | "Executed" | "Blocked";
+    notes?: string | null;
+  };
+};
 
-function shouldRetryCommandDispatch(status: number, payload: unknown): boolean {
-  if (status !== 500) {
-    return false;
-  }
-  const record = asObject(payload);
-  const code = asNumber(record?.code);
-  if (code === 1001) {
-    return true;
-  }
-  const message = inferApiError(payload)?.toLowerCase() ?? "";
-  return message.includes("did not acknowledge") || message.includes("communicating with roblox");
-}
-
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
+async function dispatchSessionAnnouncement(
+  request: NextRequest,
+  announcementText: string,
+): Promise<{
+  attempted: boolean;
+  delivered: boolean;
+  status: number | null;
+  command: string;
+  error: string | null;
+}> {
+  const command = ":announce";
+  const commandText = `${command} ${announcementText}`;
+  const commandUrl = new URL("/api/panels/commands", request.nextUrl.origin).toString();
+  const commandResponse = await fetch(commandUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: request.headers.get("cookie") ?? "",
+    },
+    body: JSON.stringify({
+      command,
+      notes: announcementText,
+      quickAction: true,
+    }),
+    cache: "no-store",
   });
+
+  const payload = (await commandResponse.json().catch(() => ({}))) as CommandPanelResponse;
+  const result = payload.execution?.result ?? "Queued";
+  if (commandResponse.ok && result === "Executed") {
+    return {
+      attempted: true,
+      delivered: true,
+      status: commandResponse.status,
+      command: commandText,
+      error: null,
+    };
+  }
+
+  let error = payload.error ?? inferApiError(payload);
+  if (!error) {
+    if (result === "Queued" && payload.queuedByCooldown) {
+      const cooldown = typeof payload.cooldownRemaining === "number" ? ` (${payload.cooldownRemaining}s remaining)` : "";
+      error = `Announcement queued by cooldown${cooldown}.`;
+    } else if (result === "Queued") {
+      error = "Announcement queued by command policy.";
+    } else if (result === "Blocked") {
+      error = payload.execution?.notes ?? "Announcement command was blocked.";
+    } else {
+      error = "Announcement command did not complete successfully.";
+    }
+  }
+
+  return {
+    attempted: true,
+    delivered: false,
+    status: commandResponse.status,
+    command: commandText,
+    error,
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -219,13 +261,11 @@ export async function POST(request: NextRequest) {
       queueCount: live.queueCount,
       serverName: live.serverName,
     });
-    const announceCommand = `:h ${announcementText}`;
-
     const announcement = {
       attempted: false,
       delivered: false,
       status: null as number | null,
-      command: announceCommand,
+      command: "",
       error: null as string | null,
     };
 
@@ -239,31 +279,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (erlcKey) {
-      announcement.attempted = true;
-      let commandResponse = await runErlcCommand(erlcKey.serverKey, announceCommand);
-      let attempts = 1;
-      while (attempts < 3 && shouldRetryCommandDispatch(commandResponse.status, commandResponse.data)) {
-        await wait(4200 + attempts * 1600);
-        attempts += 1;
-        commandResponse = await runErlcCommand(erlcKey.serverKey, announceCommand);
-      }
-      const retried = attempts > 1;
-      announcement.status = commandResponse.status;
-      announcement.delivered = commandResponse.ok;
-      if (!commandResponse.ok) {
-        let reason = inferApiError(commandResponse.data);
-        if (shouldRetryCommandDispatch(commandResponse.status, commandResponse.data)) {
-          reason = `ER:LC did not acknowledge command after ${attempts} attempts.`;
-        }
-        announcement.error =
-          reason ??
-          (commandResponse.status === 422
-            ? "ER:LC rejected the command (often because the server has no active players)."
-            : "ER:LC rejected the announcement command.");
-      }
-      if (retried && !announcement.delivered && !announcement.error) {
-        announcement.error = `ER:LC did not acknowledge command after ${attempts} attempts.`;
-      }
+      const dispatch = await dispatchSessionAnnouncement(request, announcementText);
+      announcement.attempted = dispatch.attempted;
+      announcement.delivered = dispatch.delivered;
+      announcement.status = dispatch.status;
+      announcement.command = dispatch.command;
+      announcement.error = dispatch.error;
     } else {
       announcement.error = "ER:LC is not connected for this workspace.";
     }
