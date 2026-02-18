@@ -23,21 +23,39 @@ export async function GlobalNavbar() {
           <Link href="/" className="text-2xl font-semibold tracking-tight sm:text-3xl">
             sentinel
           </Link>
+          {session ? (
+            <Link
+              href="/app"
+              className="rounded-full border border-[var(--line)] px-2 py-0.5 text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]"
+            >
+              dashboard
+            </Link>
+          ) : null}
         </div>
 
         <nav className="flex w-full items-center justify-end gap-3 text-sm sm:w-auto sm:gap-4 sm:text-base">
-          <Link href="/features" className="nav-quiet-link">
-            Features
-          </Link>
-          <Link href="/app" className="nav-quiet-link">
-            Workspace
-          </Link>
           {session ? (
-            <AccountMenu user={session.user} />
+            <>
+              <Link href="/app/integrations" className="nav-quiet-link">
+                Integrations
+              </Link>
+              <Link href="/app/alerts" className="nav-quiet-link">
+                Alerts
+              </Link>
+              <Link href="/app/settings" className="nav-quiet-link">
+                Settings
+              </Link>
+              <AccountMenu user={session.user} />
+            </>
           ) : (
-            <Link href="/login" className="nav-quiet-link">
-              Login
-            </Link>
+            <>
+              <Link href="/features" className="nav-quiet-link">
+                Features
+              </Link>
+              <Link href="/login" className="nav-quiet-link">
+                Login
+              </Link>
+            </>
           )}
         </nav>
       </div>
