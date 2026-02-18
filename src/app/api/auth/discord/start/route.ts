@@ -12,10 +12,16 @@ function redirectToLogin(request: NextRequest, error: string) {
   return NextResponse.redirect(url);
 }
 
+function redirectToAccessDenied(request: NextRequest, reason: string) {
+  const url = new URL("/access-denied", request.url);
+  url.searchParams.set("reason", reason);
+  return NextResponse.redirect(url);
+}
+
 export async function POST(request: NextRequest) {
   const originError = validateTrustedOrigin(request);
   if (originError) {
-    return redirectToLogin(request, "login_intent_required");
+    return redirectToAccessDenied(request, "oauth_intent");
   }
 
   const response = NextResponse.redirect(new URL("/api/auth/discord/login", request.url), 303);
@@ -30,5 +36,5 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  return redirectToLogin(request, "login_intent_required");
+  return redirectToAccessDenied(request, "oauth_intent");
 }

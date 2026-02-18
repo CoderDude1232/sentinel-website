@@ -11,7 +11,9 @@ export async function GET(request: NextRequest) {
   const intentCookie = request.cookies.get(DISCORD_OAUTH_INTENT_COOKIE_NAME)?.value;
 
   if (!intentCookie) {
-    const response = NextResponse.redirect(new URL("/login?error=login_intent_required", request.url));
+    const deniedUrl = new URL("/access-denied", request.url);
+    deniedUrl.searchParams.set("reason", "oauth_intent");
+    const response = NextResponse.redirect(deniedUrl);
     response.cookies.set(DISCORD_OAUTH_INTENT_COOKIE_NAME, "", {
       httpOnly: true,
       secure: shouldUseSecureCookies(),
