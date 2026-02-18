@@ -209,7 +209,7 @@ export default function LogsPage() {
               return (
                 <article key={event.id.toString()} className="dashboard-feed-item rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.025)] p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold">{event.module} · {event.action}</p>
+                    <p className="font-semibold">{event.module} - {event.action}</p>
                     <span className="text-xs text-[var(--ink-soft)]">{formatTimestamp(event.createdAt)}</span>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs">
