@@ -5,6 +5,7 @@ import {
   DISCORD_OAUTH_INTENT_COOKIE_NAME,
   CSRF_COOKIE_NAME,
 } from "@/lib/security-constants";
+import { getSharedCookieDomain } from "@/lib/cookie-domain";
 
 export {
   SESSION_COOKIE_NAME,
@@ -114,3 +115,5 @@ export function createCsrfToken(): string {
 export function shouldUseSecureCookies(): boolean {
   return process.env.NODE_ENV === "production";
 }
+
+export { getSharedCookieDomain };

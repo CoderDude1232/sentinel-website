@@ -19,6 +19,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   const cookieStore = await cookies();
   const session = parseSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
+  const apiOrigin = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") ?? "";
+  const discordStartAction = apiOrigin ? `${apiOrigin}/auth/discord/start` : "/api/auth/discord/start";
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
@@ -59,7 +61,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </>
           ) : (
             <div className="mt-7 flex flex-wrap gap-3">
-              <form action="/api/auth/discord/start" method="POST" className="w-full sm:w-auto">
+              <form action={discordStartAction} method="POST" className="w-full sm:w-auto">
                 <button type="submit" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
                   Continue with Discord
                 </button>

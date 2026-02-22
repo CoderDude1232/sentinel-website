@@ -32,6 +32,9 @@ function formatTimestamp(value: string | null): string {
 }
 
 export function DiscordBotPanel() {
+  const apiOrigin = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") ?? "";
+  const discordStartAction = apiOrigin ? `${apiOrigin}/auth/discord/start` : "/api/auth/discord/start";
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [botConfigured, setBotConfigured] = useState(false);
@@ -268,7 +271,7 @@ export function DiscordBotPanel() {
         <div className="mt-3 rounded-lg border border-[rgba(216,29,56,0.45)] bg-[rgba(216,29,56,0.12)] p-3 text-sm text-[var(--ink-strong)]">
           Discord guild permission is missing or expired. Re-auth to grant &quot;View your servers&quot;.
           <div className="mt-2">
-            <form action="/api/auth/discord/start" method="POST">
+            <form action={discordStartAction} method="POST">
               <button type="submit" className="button-secondary px-3 py-2 text-sm">
                 Reconnect Discord OAuth
               </button>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserFromRequest } from "@/lib/auth";
+import { getSharedCookieDomain } from "@/lib/cookie-domain";
 import { getUserErlcKey } from "@/lib/erlc-store";
 import {
   type OnboardingPreferences,
@@ -59,10 +60,12 @@ export async function GET(request: NextRequest) {
       erlcConnected: Boolean(erlcKey),
       onboardingComplete,
     });
+    const cookieDomain = getSharedCookieDomain();
     response.cookies.set(ONBOARDING_COOKIE_NAME, onboardingComplete ? "1" : "0", {
       httpOnly: false,
       sameSite: "lax",
       path: "/",
+      domain: cookieDomain,
       maxAge: 60 * 60 * 24 * 30,
     });
     return response;
@@ -180,10 +183,12 @@ export async function PUT(request: NextRequest) {
       onboardingComplete,
       steps,
     });
+    const cookieDomain = getSharedCookieDomain();
     response.cookies.set(ONBOARDING_COOKIE_NAME, onboardingComplete ? "1" : "0", {
       httpOnly: false,
       sameSite: "lax",
       path: "/",
+      domain: cookieDomain,
       maxAge: 60 * 60 * 24 * 30,
     });
     return response;

@@ -3,12 +3,38 @@ import type { SessionUser } from "@/lib/session";
 const DISCORD_API_BASE = "https://discord.com/api/v10";
 const DISCORD_BOT_PERMISSIONS = "93184";
 
-function requiredEnv(name: "DISCORD_CLIENT_ID" | "DISCORD_CLIENT_SECRET" | "DISCORD_REDIRECT_URI"): string {
+function requiredEnv(name: "DISCORD_CLIENT_ID" | "DISCORD_CLIENT_SECRET"): string {
   const value = process.env[name];
   if (!value) {
     throw new Error(`${name} is not set`);
   }
   return value;
+}
+
+function resolveDiscordRedirectUri(): string {
+  const explicit = process.env.DISCORD_REDIRECT_URI?.trim();
+  if (explicit) {
+    return explicit;
+  }
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (apiUrl) {
+    return `${apiUrl.replace(/\/$/, "")}/auth/discord/callback`;
+  }
+
+  const apiHost = process.env.NEXT_PUBLIC_API_HOST?.trim();
+  if (apiHost) {
+    return `https://${apiHost}/auth/discord/callback`;
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (appUrl) {
+    return `${appUrl.replace(/\/$/, "")}/api/auth/discord/callback`;
+  }
+
+  throw new Error(
+    "DISCORD_REDIRECT_URI is not set and no API host/url fallback is available",
+  );
 }
 
 function optionalEnv(name: "DISCORD_BOT_TOKEN" | "DISCORD_BOT_CLIENT_ID"): string | null {
@@ -87,7 +113,7 @@ function requiredBotToken(): string {
 export function getDiscordAuthorizeUrl(state: string): string {
   const params = new URLSearchParams({
     client_id: requiredEnv("DISCORD_CLIENT_ID"),
-    redirect_uri: requiredEnv("DISCORD_REDIRECT_URI"),
+    redirect_uri: resolveDiscordRedirectUri(),
     response_type: "code",
     scope: "identify guilds",
     state,
@@ -103,7 +129,7 @@ export async function exchangeCodeForTokenBundle(code: string): Promise<DiscordT
     client_secret: requiredEnv("DISCORD_CLIENT_SECRET"),
     grant_type: "authorization_code",
     code,
-    redirect_uri: requiredEnv("DISCORD_REDIRECT_URI"),
+    redirect_uri: resolveDiscordRedirectUri(),
   });
 
   const response = await fetch(`${DISCORD_API_BASE}/oauth2/token`, {

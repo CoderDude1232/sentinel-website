@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CSRF_COOKIE_NAME, SESSION_COOKIE_NAME } from "@/lib/security-constants";
+import { getSharedCookieDomain } from "@/lib/cookie-domain";
 
 const ONBOARDING_COOKIE_NAME = "sentinel_onboarding_complete";
 const DEFAULT_MARKETING_HOST = "sentinelerlc.xyz";
@@ -20,19 +21,27 @@ function withSecurityHeaders(response: NextResponse): NextResponse {
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const sharedCookieDomain = getSharedCookieDomain();
   const hostname = normalizeHost(request.headers.get("host"));
   const marketingHost = normalizeHost(process.env.NEXT_PUBLIC_MARKETING_HOST ?? DEFAULT_MARKETING_HOST);
   const dashboardHost = normalizeHost(process.env.NEXT_PUBLIC_DASHBOARD_HOST ?? DEFAULT_DASHBOARD_HOST);
   const apiHost = normalizeHost(process.env.NEXT_PUBLIC_API_HOST ?? DEFAULT_API_HOST);
   const hostSupportsRouting = Boolean(hostname);
 
-  if (hostSupportsRouting && hostname === apiHost && !pathname.startsWith("/api")) {
-    return withSecurityHeaders(
-      NextResponse.json(
-        { error: "API host only serves /api routes." },
-        { status: 404 },
-      ),
-    );
+  if (hostSupportsRouting && hostname === apiHost) {
+    if (pathname.startsWith("/auth/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/api${pathname}`;
+      return withSecurityHeaders(NextResponse.rewrite(url));
+    }
+    if (!pathname.startsWith("/api")) {
+      return withSecurityHeaders(
+        NextResponse.json(
+          { error: "API host only serves /api routes." },
+          { status: 404 },
+        ),
+      );
+    }
   }
 
   if (hostSupportsRouting && hostname === dashboardHost) {
@@ -106,6 +115,7 @@ export function middleware(request: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
+      domain: sharedCookieDomain,
       maxAge: 60 * 60 * 24 * 7,
     });
   }

@@ -41,6 +41,9 @@ const LANDING_CARDS: Array<{ src: string; alt: string; label: string; title: str
 ];
 
 export default function Home() {
+  const apiOrigin = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") ?? "";
+  const discordStartAction = apiOrigin ? `${apiOrigin}/auth/discord/start` : "/api/auth/discord/start";
+
   return (
     <main className="mx-auto w-full max-w-7xl px-5 sm:px-8">
       <section className="hero-shell">
@@ -71,7 +74,7 @@ export default function Home() {
             <Link href="/app/onboarding" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
               Connect ER:LC Server
             </Link>
-            <form action="/api/auth/discord/start" method="POST" className="w-full sm:w-auto">
+            <form action={discordStartAction} method="POST" className="w-full sm:w-auto">
               <button type="submit" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
                 Sign In with Discord
               </button>
