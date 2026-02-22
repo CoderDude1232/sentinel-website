@@ -32,8 +32,7 @@ function formatTimestamp(value: string | null): string {
 }
 
 export function DiscordBotPanel() {
-  const apiOrigin = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") ?? "";
-  const discordStartAction = apiOrigin ? `${apiOrigin}/auth/discord/start` : "/api/auth/discord/start";
+  const discordStartAction = "/auth/discord/start";
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

@@ -19,8 +19,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   const cookieStore = await cookies();
   const session = parseSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
-  const apiOrigin = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") ?? "";
-  const discordStartAction = apiOrigin ? `${apiOrigin}/auth/discord/start` : "/api/auth/discord/start";
+  const discordStartAction = "/auth/discord/start";
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">

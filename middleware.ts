@@ -94,6 +94,12 @@ export function middleware(request: NextRequest) {
   }
 
   if (hostSupportsRouting && hostname === dashboardHost) {
+    if (pathname.startsWith("/auth/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/api${pathname}`;
+      return withSecurityHeaders(NextResponse.rewrite(url));
+    }
+
     if (pathname === "/features") {
       const url = request.nextUrl.clone();
       url.pathname = "/";
@@ -120,7 +126,12 @@ export function middleware(request: NextRequest) {
     hostname === marketingHost &&
     dashboardHost &&
     dashboardHost !== marketingHost &&
-    (pathname === "/login" || pathname.startsWith("/app") || isDashboardModulePath(pathname))
+    (
+      pathname === "/login" ||
+      pathname.startsWith("/app") ||
+      pathname.startsWith("/auth/") ||
+      isDashboardModulePath(pathname)
+    )
   ) {
     const url = request.nextUrl.clone();
     url.hostname = dashboardHost;

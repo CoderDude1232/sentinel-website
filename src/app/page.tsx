@@ -41,8 +41,7 @@ const LANDING_CARDS: Array<{ src: string; alt: string; label: string; title: str
 ];
 
 export default function Home() {
-  const apiOrigin = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, "") ?? "";
-  const discordStartAction = apiOrigin ? `${apiOrigin}/auth/discord/start` : "/api/auth/discord/start";
+  const discordStartAction = "/auth/discord/start";
 
   return (
     <main className="mx-auto w-full max-w-7xl px-5 sm:px-8">
