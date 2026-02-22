@@ -65,44 +65,44 @@ const navSections: Array<{
   {
     title: "Workspace",
     links: [
-      { href: "/app", label: "Overview", hint: "Live command center", icon: LayoutDashboard, moduleKey: null },
-      { href: "/app/onboarding", label: "Onboarding", hint: "Finish initial setup", icon: Flag, moduleKey: null },
-      { href: "/app/integrations", label: "Integrations", hint: "ER:LC and Discord links", icon: Link2, moduleKey: null },
-      { href: "/app/settings", label: "Settings", hint: "Workspace defaults", icon: Settings2, moduleKey: null },
+      { href: "/", label: "Overview", hint: "Live command center", icon: LayoutDashboard, moduleKey: null },
+      { href: "/onboarding", label: "Onboarding", hint: "Finish initial setup", icon: Flag, moduleKey: null },
+      { href: "/integrations", label: "Integrations", hint: "ER:LC and Discord links", icon: Link2, moduleKey: null },
+      { href: "/settings", label: "Settings", hint: "Workspace defaults", icon: Settings2, moduleKey: null },
     ],
   },
   {
     title: "Operations",
     links: [
-      { href: "/app/moderation", label: "Moderation", hint: "Cases and quick actions", icon: Shield, moduleKey: "enableModeration" },
-      { href: "/app/activity", label: "Activity", hint: "Staff analytics", icon: Activity, moduleKey: "enableActivity" },
-      { href: "/app/infractions", label: "Infractions", hint: "Punishment records", icon: FileWarning, moduleKey: "enableInfractions" },
-      { href: "/app/sessions", label: "Sessions", hint: "Session planning", icon: CalendarDays, moduleKey: "enableSessions" },
-      { href: "/app/departments", label: "Departments", hint: "Org structure", icon: Building2, moduleKey: "enableDepartments" },
-      { href: "/app/alerts", label: "Alerts", hint: "Discord + in-app alerts", icon: Bell, moduleKey: "enableAlerts" },
-      { href: "/app/team", label: "Teams", hint: "Team members", icon: Users, moduleKey: "enableTeams" },
+      { href: "/moderation", label: "Moderation", hint: "Cases and quick actions", icon: Shield, moduleKey: "enableModeration" },
+      { href: "/activity", label: "Activity", hint: "Staff analytics", icon: Activity, moduleKey: "enableActivity" },
+      { href: "/infractions", label: "Infractions", hint: "Punishment records", icon: FileWarning, moduleKey: "enableInfractions" },
+      { href: "/sessions", label: "Sessions", hint: "Session planning", icon: CalendarDays, moduleKey: "enableSessions" },
+      { href: "/departments", label: "Departments", hint: "Org structure", icon: Building2, moduleKey: "enableDepartments" },
+      { href: "/alerts", label: "Alerts", hint: "Discord + in-app alerts", icon: Bell, moduleKey: "enableAlerts" },
+      { href: "/team", label: "Teams", hint: "Team members", icon: Users, moduleKey: "enableTeams" },
     ],
   },
   {
     title: "Governance",
     links: [
-      { href: "/app/rbac", label: "RBAC", hint: "Permission control", icon: KeyRound, moduleKey: "enableRbac" },
-      { href: "/app/workflows", label: "Workflows", hint: "Approval paths", icon: GitBranch, moduleKey: "enableWorkflows" },
-      { href: "/app/appeals", label: "Appeals", hint: "Appeal lifecycle", icon: Scale, moduleKey: "enableAppeals" },
-      { href: "/app/profiles", label: "Profiles", hint: "Staff profiles", icon: UserRound, moduleKey: "enableProfiles" },
-      { href: "/app/logs", label: "Audit Logs", hint: "Historical actions", icon: ScrollText, moduleKey: "enableLogs" },
+      { href: "/rbac", label: "RBAC", hint: "Permission control", icon: KeyRound, moduleKey: "enableRbac" },
+      { href: "/workflows", label: "Workflows", hint: "Approval paths", icon: GitBranch, moduleKey: "enableWorkflows" },
+      { href: "/appeals", label: "Appeals", hint: "Appeal lifecycle", icon: Scale, moduleKey: "enableAppeals" },
+      { href: "/profiles", label: "Profiles", hint: "Staff profiles", icon: UserRound, moduleKey: "enableProfiles" },
+      { href: "/logs", label: "Audit Logs", hint: "Historical actions", icon: ScrollText, moduleKey: "enableLogs" },
     ],
   },
   {
     title: "Automation",
     links: [
-      { href: "/app/automation", label: "Automation", hint: "Rules and triggers", icon: Bot, moduleKey: "enableAutomation" },
-      { href: "/app/realtime", label: "Realtime", hint: "Live streams", icon: Radio, moduleKey: "enableRealtime" },
-      { href: "/app/commands", label: "Commands", hint: "Command relay", icon: TerminalSquare, moduleKey: "enableCommands" },
-      { href: "/app/backups", label: "Backups", hint: "Snapshot backups", icon: Archive, moduleKey: "enableBackups" },
-      { href: "/app/api-keys", label: "API Keys", hint: "Key management", icon: Key, moduleKey: "enableApiKeys" },
-      { href: "/app/observability", label: "Observability", hint: "System health", icon: LineChart, moduleKey: "enableObservability" },
-      { href: "/app/billing", label: "Billing", hint: "Future billing", icon: CreditCard, moduleKey: "enableBilling" },
+      { href: "/automation", label: "Automation", hint: "Rules and triggers", icon: Bot, moduleKey: "enableAutomation" },
+      { href: "/realtime", label: "Realtime", hint: "Live streams", icon: Radio, moduleKey: "enableRealtime" },
+      { href: "/commands", label: "Commands", hint: "Command relay", icon: TerminalSquare, moduleKey: "enableCommands" },
+      { href: "/backups", label: "Backups", hint: "Snapshot backups", icon: Archive, moduleKey: "enableBackups" },
+      { href: "/api-keys", label: "API Keys", hint: "Key management", icon: Key, moduleKey: "enableApiKeys" },
+      { href: "/observability", label: "Observability", hint: "System health", icon: LineChart, moduleKey: "enableObservability" },
+      { href: "/billing", label: "Billing", hint: "Future billing", icon: CreditCard, moduleKey: "enableBilling" },
     ],
   },
 ];
@@ -158,7 +158,7 @@ export function DashboardNav() {
         return [
           {
             title: "Setup",
-            links: [{ href: "/app/onboarding", label: "Onboarding", hint: "Complete initial setup", icon: Flag, moduleKey: null }],
+            links: [{ href: "/onboarding", label: "Onboarding", hint: "Complete initial setup", icon: Flag, moduleKey: null }],
           },
         ];
       }
@@ -168,7 +168,7 @@ export function DashboardNav() {
         .map((section) => ({
           ...section,
           links: section.links
-            .filter((link) => link.href !== "/app/onboarding")
+            .filter((link) => link.href !== "/onboarding")
             .filter((link) => (link.moduleKey ? preferences[link.moduleKey] : true)),
         }))
         .filter((section) => section.links.length > 0)
@@ -187,9 +187,17 @@ export function DashboardNav() {
           <div className="mt-1.5 flex flex-col gap-1.5">
             {section.links.map((link) => {
               const Icon = link.icon;
+              const normalizedPathname =
+                pathname === "/app"
+                  ? "/"
+                  : pathname.startsWith("/app/")
+                    ? pathname.slice(4)
+                    : pathname;
               const isActive =
-                pathname === link.href ||
-                (link.href !== "/app" && pathname.startsWith(`${link.href}/`));
+                link.href === "/"
+                  ? normalizedPathname === "/"
+                  : normalizedPathname === link.href ||
+                    normalizedPathname.startsWith(`${link.href}/`);
 
               return (
                 <Link

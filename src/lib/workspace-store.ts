@@ -1631,9 +1631,9 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
       level: row.level,
     })),
     nextActions: [
-      { label: "Review moderation queue", href: "/app/moderation" },
-      { label: "Open staff activity panel", href: "/app/activity" },
-      { label: "Manage session board", href: "/app/sessions" },
+      { label: "Review moderation queue", href: "/moderation" },
+      { label: "Open staff activity panel", href: "/activity" },
+      { label: "Manage session board", href: "/sessions" },
     ],
   };
 }

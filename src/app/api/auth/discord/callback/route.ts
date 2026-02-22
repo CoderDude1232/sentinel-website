@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     }
     const sessionToken = createSessionToken(user);
 
-    const response = NextResponse.redirect(new URL("/app", resolveDashboardOrigin(request)));
+    const response = NextResponse.redirect(new URL("/", resolveDashboardOrigin(request)));
     response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
       httpOnly: true,
       secure: shouldUseSecureCookies(),

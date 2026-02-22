@@ -1,10 +1,26 @@
 import Image from "next/image";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { parseSessionToken, SESSION_COOKIE_NAME } from "@/lib/session";
 import { AccountMenu } from "@/components/account-menu";
 
+function normalizeHost(value: string | null): string {
+  return (value ?? "").trim().toLowerCase().split(":")[0] ?? "";
+}
+
 export async function GlobalNavbar() {
+  const headerStore = await headers();
+  const host = normalizeHost(headerStore.get("host"));
+  const configuredDashboardHost = normalizeHost(process.env.NEXT_PUBLIC_DASHBOARD_HOST ?? null);
+  const isDashboardHost = configuredDashboardHost
+    ? host === configuredDashboardHost
+    : host.startsWith("app.");
+  const dashboardPrefix = isDashboardHost ? "" : "/app";
+  const dashboardHref = dashboardPrefix || "/";
+  const integrationsHref = `${dashboardPrefix}/integrations`;
+  const alertsHref = `${dashboardPrefix}/alerts`;
+  const settingsHref = `${dashboardPrefix}/settings`;
+
   const cookieStore = await cookies();
   const session = parseSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
 
@@ -25,7 +41,7 @@ export async function GlobalNavbar() {
           </Link>
           {session ? (
             <Link
-              href="/app"
+              href={dashboardHref}
               className="text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]"
             >
               dashboard
@@ -36,13 +52,13 @@ export async function GlobalNavbar() {
         <nav className="flex w-full items-center justify-end gap-3 text-sm sm:w-auto sm:gap-4 sm:text-base">
           {session ? (
             <>
-              <Link href="/app/integrations" className="nav-quiet-link">
+              <Link href={integrationsHref} className="nav-quiet-link">
                 Integrations
               </Link>
-              <Link href="/app/alerts" className="nav-quiet-link">
+              <Link href={alertsHref} className="nav-quiet-link">
                 Alerts
               </Link>
-              <Link href="/app/settings" className="nav-quiet-link">
+              <Link href={settingsHref} className="nav-quiet-link">
                 Settings
               </Link>
               <AccountMenu user={session.user} />

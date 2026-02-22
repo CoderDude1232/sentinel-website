@@ -6,6 +6,30 @@ const ONBOARDING_COOKIE_NAME = "sentinel_onboarding_complete";
 const DEFAULT_MARKETING_HOST = "sentinelerlc.xyz";
 const DEFAULT_DASHBOARD_HOST = "app.sentinelerlc.xyz";
 const DEFAULT_API_HOST = "api.sentinelerlc.xyz";
+const DASHBOARD_ROOT_SEGMENTS = new Set([
+  "onboarding",
+  "integrations",
+  "settings",
+  "moderation",
+  "activity",
+  "infractions",
+  "sessions",
+  "departments",
+  "alerts",
+  "team",
+  "rbac",
+  "workflows",
+  "appeals",
+  "profiles",
+  "logs",
+  "automation",
+  "realtime",
+  "commands",
+  "backups",
+  "api-keys",
+  "observability",
+  "billing",
+]);
 
 function normalizeHost(value: string | null): string {
   return (value ?? "").trim().toLowerCase().split(":")[0] ?? "";
@@ -19,6 +43,29 @@ function withSecurityHeaders(response: NextResponse): NextResponse {
   return response;
 }
 
+function firstPathSegment(pathname: string): string {
+  const trimmed = pathname.replace(/^\/+/, "");
+  const segment = trimmed.split("/")[0] ?? "";
+  return segment.trim().toLowerCase();
+}
+
+function isDashboardModulePath(pathname: string): boolean {
+  if (!pathname.startsWith("/") || pathname === "/") {
+    return false;
+  }
+  return DASHBOARD_ROOT_SEGMENTS.has(firstPathSegment(pathname));
+}
+
+function isDashboardHostBypassPath(pathname: string): boolean {
+  return (
+    pathname === "/login" ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/access-denied") ||
+    pathname === "/terms" ||
+    pathname === "/privacy"
+  );
+}
+
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const sharedCookieDomain = getSharedCookieDomain();
@@ -27,6 +74,8 @@ export function middleware(request: NextRequest) {
   const dashboardHost = normalizeHost(process.env.NEXT_PUBLIC_DASHBOARD_HOST ?? DEFAULT_DASHBOARD_HOST);
   const apiHost = normalizeHost(process.env.NEXT_PUBLIC_API_HOST ?? DEFAULT_API_HOST);
   const hostSupportsRouting = Boolean(hostname);
+  const isDashboardHost = hostSupportsRouting && hostname === dashboardHost;
+  let pendingDashboardRewrite: URL | null = null;
 
   if (hostSupportsRouting && hostname === apiHost) {
     if (pathname.startsWith("/auth/")) {
@@ -45,24 +94,24 @@ export function middleware(request: NextRequest) {
   }
 
   if (hostSupportsRouting && hostname === dashboardHost) {
-    if (pathname === "/" || pathname === "/features") {
+    if (pathname === "/features") {
       const url = request.nextUrl.clone();
-      url.pathname = "/app";
+      url.pathname = "/";
       url.search = "";
       return withSecurityHeaders(NextResponse.redirect(url));
     }
 
-    const allowedOnDashboardHost =
-      pathname === "/login" ||
-      pathname.startsWith("/app") ||
-      pathname.startsWith("/api") ||
-      pathname.startsWith("/access-denied");
-
-    if (!allowedOnDashboardHost) {
+    if (pathname === "/app" || pathname.startsWith("/app/")) {
       const url = request.nextUrl.clone();
-      url.pathname = "/app";
+      url.pathname = pathname === "/app" ? "/" : pathname.slice(4) || "/";
       url.search = "";
       return withSecurityHeaders(NextResponse.redirect(url));
+    }
+
+    if (!isDashboardHostBypassPath(pathname)) {
+      const rewriteUrl = request.nextUrl.clone();
+      rewriteUrl.pathname = pathname === "/" ? "/app" : `/app${pathname}`;
+      pendingDashboardRewrite = rewriteUrl;
     }
   }
 
@@ -71,43 +120,51 @@ export function middleware(request: NextRequest) {
     hostname === marketingHost &&
     dashboardHost &&
     dashboardHost !== marketingHost &&
-    (pathname === "/login" || pathname.startsWith("/app"))
+    (pathname === "/login" || pathname.startsWith("/app") || isDashboardModulePath(pathname))
   ) {
     const url = request.nextUrl.clone();
     url.hostname = dashboardHost;
     url.port = "";
+    if (pathname === "/app" || pathname.startsWith("/app/")) {
+      url.pathname = pathname === "/app" ? "/" : pathname.slice(4) || "/";
+    }
     return withSecurityHeaders(NextResponse.redirect(url));
   }
 
   const hasSession = Boolean(request.cookies.get(SESSION_COOKIE_NAME)?.value);
+  const effectiveDashboardPath =
+    pendingDashboardRewrite?.pathname ??
+    (pathname.startsWith("/app") ? pathname : null);
   const onboardingCookie = request.cookies.get(ONBOARDING_COOKIE_NAME)?.value;
   const onboardingComplete = onboardingCookie === "1";
 
   if (
-    pathname.startsWith("/app") &&
+    effectiveDashboardPath?.startsWith("/app") &&
     hasSession &&
     !onboardingComplete &&
-    pathname !== "/app/onboarding"
+    effectiveDashboardPath !== "/app/onboarding"
   ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/app/onboarding";
+    url.pathname = isDashboardHost ? "/onboarding" : "/app/onboarding";
     url.search = "";
     return withSecurityHeaders(NextResponse.redirect(url));
   }
 
   if (
-    pathname.startsWith("/app") &&
+    effectiveDashboardPath?.startsWith("/app") &&
     hasSession &&
     onboardingComplete &&
-    pathname === "/app/onboarding"
+    effectiveDashboardPath === "/app/onboarding"
   ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/app";
+    url.pathname = isDashboardHost ? "/" : "/app";
     url.search = "";
     return withSecurityHeaders(NextResponse.redirect(url));
   }
 
-  const response = withSecurityHeaders(NextResponse.next());
+  const response = withSecurityHeaders(
+    pendingDashboardRewrite ? NextResponse.rewrite(pendingDashboardRewrite) : NextResponse.next(),
+  );
   const hasCsrf = Boolean(request.cookies.get(CSRF_COOKIE_NAME)?.value);
   if (hasSession && !hasCsrf) {
     response.cookies.set(CSRF_COOKIE_NAME, crypto.randomUUID().replaceAll("-", ""), {

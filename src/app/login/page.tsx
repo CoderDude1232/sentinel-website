@@ -48,10 +48,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 <span className="text-[var(--ink-strong)]">{session.user.displayName}</span>
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <Link href="/app" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
+                <Link href="/" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
                   Open Dashboard
                 </Link>
-                <Link href="/app/onboarding" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
+                <Link href="/onboarding" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
                   Onboard Server
                 </Link>
                 <Link href="/api/auth/logout" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">

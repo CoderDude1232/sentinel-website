@@ -25,6 +25,7 @@ export function AccountMenu({ user }: AccountMenuProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [dashboardPrefix, setDashboardPrefix] = useState("/app");
   const menuRef = useRef<HTMLDivElement>(null);
   const initials = useMemo(() => getInitials(user.displayName), [user.displayName]);
 
@@ -50,6 +51,13 @@ export function AccountMenu({ user }: AccountMenuProps) {
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
     };
+  }, []);
+
+  useEffect(() => {
+    const host = window.location.hostname.toLowerCase();
+    const configuredDashboardHost = process.env.NEXT_PUBLIC_DASHBOARD_HOST?.trim().toLowerCase() ?? "";
+    const onDashboardHost = configuredDashboardHost ? host === configuredDashboardHost : host.startsWith("app.");
+    setDashboardPrefix(onDashboardHost ? "" : "/app");
   }, []);
 
   async function handleSignOut() {
@@ -106,13 +114,13 @@ export function AccountMenu({ user }: AccountMenuProps) {
           </div>
           <div className="pt-1 text-sm">
             <Link
-              href="/app"
+              href={dashboardPrefix || "/"}
               className="block rounded-md px-2 py-1.5 text-[var(--ink-soft)] hover:bg-[rgba(216,29,56,0.16)] hover:text-[var(--ink-strong)]"
             >
               Dashboard
             </Link>
             <Link
-              href="/app/settings"
+              href={`${dashboardPrefix}/settings`}
               className="block rounded-md px-2 py-1.5 text-[var(--ink-soft)] hover:bg-[rgba(216,29,56,0.16)] hover:text-[var(--ink-strong)]"
             >
               Account Settings

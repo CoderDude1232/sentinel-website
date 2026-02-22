@@ -34,10 +34,10 @@ const loadingCards: DashboardSummary["cards"] = [
 ];
 
 const shortcutLinks: Array<{ href: string; label: string; caption: string }> = [
-  { href: "/app/moderation", label: "Moderation", caption: "Manage live incidents and cases" },
-  { href: "/app/commands", label: "Commands", caption: "Run in-game actions quickly" },
-  { href: "/app/activity", label: "Activity", caption: "Review staff performance" },
-  { href: "/app/logs", label: "Audit logs", caption: "Trace historical actions" },
+  { href: "/moderation", label: "Moderation", caption: "Manage live incidents and cases" },
+  { href: "/commands", label: "Commands", caption: "Run in-game actions quickly" },
+  { href: "/activity", label: "Activity", caption: "Review staff performance" },
+  { href: "/logs", label: "Audit logs", caption: "Trace historical actions" },
 ];
 
 function levelTone(level: string): string {
@@ -129,20 +129,20 @@ export default function AppOverviewPage() {
     ? {
         title: "Connect your ER:LC server",
         description: "Start in Integrations by adding your server key. This unlocks live players, mod calls, and command routing.",
-        href: "/app/integrations",
+        href: "/integrations",
         cta: "Open Integrations",
       }
     : !summary.erlc.connected
       ? {
           title: "Recheck server connection",
           description: "Your key is saved but live checks are not healthy yet. Run a sync or verify your private server is online.",
-          href: "/app/integrations",
+          href: "/integrations",
           cta: "Review connection",
         }
       : {
           title: "System is live",
           description: "You can moderate, send commands, and monitor logs in real time from this dashboard.",
-          href: "/app/moderation",
+          href: "/moderation",
           cta: "Open Moderation",
         };
 
@@ -212,10 +212,10 @@ export default function AppOverviewPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/app/integrations" className="button-secondary px-3 py-2 text-sm">
+            <Link href="/integrations" className="button-secondary px-3 py-2 text-sm">
               Integrations
             </Link>
-            <Link href="/app/commands" className="button-secondary px-3 py-2 text-sm">
+            <Link href="/commands" className="button-secondary px-3 py-2 text-sm">
               Commands
             </Link>
           </div>

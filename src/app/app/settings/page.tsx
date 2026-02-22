@@ -135,7 +135,7 @@ export default function SettingsPage() {
         throw new Error(payload.error ?? "Failed to reset workspace");
       }
       setMessage("Workspace reset complete. Redirecting to onboarding...");
-      window.location.href = "/app/onboarding";
+      window.location.href = "/onboarding";
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to reset workspace");
     } finally {

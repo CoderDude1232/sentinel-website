@@ -398,7 +398,7 @@ export function AdvancedFeaturePanel({
         ) : (
           <p className="mt-3 text-sm text-[var(--ink-soft)]">
             ER:LC is not connected for this workspace. Connect it in{" "}
-            <Link href="/app/integrations" className="text-[var(--ink-strong)] hover:underline">
+            <Link href="/integrations" className="text-[var(--ink-strong)] hover:underline">
               Integrations
             </Link>
             .
