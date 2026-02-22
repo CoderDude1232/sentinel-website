@@ -230,7 +230,7 @@ export function ErlcPanel() {
       </div>
 
       <section className="mt-5 grid gap-4 md:grid-cols-[1.05fr_0.95fr]">
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+        <article className="dashboard-card p-4">
           <h2 className="text-lg font-semibold tracking-tight">ER:LC Server-Key</h2>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
             Use your ER:LC Server-Key from in-game server settings. This key is encrypted and stored against your Discord account.
@@ -313,7 +313,7 @@ export function ErlcPanel() {
           ) : null}
         </article>
 
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+        <article className="dashboard-card p-4">
           <h2 className="text-lg font-semibold tracking-tight">Server Snapshot</h2>
           {!integration.connected ? (
             <p className="mt-3 text-sm text-[var(--ink-soft)]">

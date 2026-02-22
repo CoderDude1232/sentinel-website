@@ -17,11 +17,11 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-5 px-5 pb-6 pt-4 sm:px-8 md:grid-cols-[240px_1fr]">
+      <div className="mx-auto grid w-full max-w-[86rem] grid-cols-1 gap-5 px-4 pb-6 pt-3 sm:px-6 md:grid-cols-[272px_1fr] xl:px-8">
         <aside className="dashboard-nav-shell h-fit p-4 md:sticky md:top-4">
           <DashboardNav />
         </aside>
-        <section className="dashboard-content dashboard-glass p-5 sm:p-6">
+        <section className="dashboard-content dashboard-glass p-4 sm:p-6">
           {children}
         </section>
       </div>

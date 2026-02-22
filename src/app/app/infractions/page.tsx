@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { UiSelect } from "@/components/ui-select";
@@ -322,7 +322,7 @@ export default function InfractionsPage() {
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {data.stats.map((item) => (
-              <article key={item.type} className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+              <article key={item.type} className="dashboard-card p-4">
                 <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">{item.type}</p>
                 <p className="mt-1 text-2xl font-semibold">{item.count}</p>
               </article>

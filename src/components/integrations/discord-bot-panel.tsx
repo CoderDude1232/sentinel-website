@@ -231,7 +231,7 @@ export function DiscordBotPanel() {
   }, [status.kind]);
 
   return (
-    <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+    <article className="dashboard-card p-4">
       <h2 className="text-lg font-semibold tracking-tight">Discord Bot Integration</h2>
       <p className="mt-2 text-sm text-[var(--ink-soft)]">
         Upgrade from webhooks with managed channels, slash-command support readiness, and bot-driven alert delivery.
@@ -260,7 +260,7 @@ export function DiscordBotPanel() {
 
       {requiresRelogin ? (
         <div className="mt-3 rounded-lg border border-[rgba(216,29,56,0.45)] bg-[rgba(216,29,56,0.12)] p-3 text-sm text-[var(--ink-strong)]">
-          Discord guild permission is missing or expired. Re-auth to grant "View your servers".
+          Discord guild permission is missing or expired. Re-auth to grant &quot;View your servers&quot;.
           <div className="mt-2">
             <form action="/api/auth/discord/start" method="POST">
               <button type="submit" className="button-secondary px-3 py-2 text-sm">

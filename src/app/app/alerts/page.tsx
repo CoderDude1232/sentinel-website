@@ -106,7 +106,7 @@ export default function AlertsPage() {
       {message ? <p className="mt-2 text-sm text-[var(--ink-soft)]">{message}</p> : null}
 
       <section className="mt-5 grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+        <article className="dashboard-card p-4">
           <h2 className="text-lg font-semibold tracking-tight">Live alert feed</h2>
           {data.feed.length > visibleFeed.length ? (
             <p className="mt-1 text-xs text-[var(--ink-soft)]">
@@ -130,7 +130,7 @@ export default function AlertsPage() {
           </div>
         </article>
 
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+        <article className="dashboard-card p-4">
           <h2 className="text-lg font-semibold tracking-tight">Webhook health</h2>
           <div className="mt-3 space-y-2 text-sm">
             {visibleWebhookStatus.map((item) => (
@@ -157,7 +157,7 @@ export default function AlertsPage() {
         </article>
       </section>
 
-      <section className="mt-4 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+      <section className="mt-4 dashboard-card p-4">
         <h2 className="text-lg font-semibold tracking-tight">Live PRC risk signals</h2>
         {!data.prcSignals?.connected ? (
           <p className="mt-2 text-sm text-[var(--ink-soft)]">Connect ER:LC to stream mod-call and ban pressure into alerts.</p>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -353,7 +353,7 @@ export function AdvancedFeaturePanel({
       <p className="mt-2 text-sm text-[var(--ink-soft)]">{description}</p>
       {message ? <p className="mt-3 text-sm text-[var(--ink-soft)]">{message}</p> : null}
 
-      <section className="mt-5 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+      <section className="mt-5 dashboard-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold tracking-tight">ER:LC Live Context</h2>
           <button
@@ -396,7 +396,7 @@ export function AdvancedFeaturePanel({
         )}
       </section>
 
-      <section className="mt-5 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+      <section className="mt-5 dashboard-card p-4">
         <h2 className="text-lg font-semibold tracking-tight">Create ER:LC-linked record</h2>
         <form onSubmit={createItem} className="mt-3 space-y-2">
           <input
@@ -484,7 +484,7 @@ export function AdvancedFeaturePanel({
           const linkedPlayers = asNumber(liveContext?.playerCount);
 
           return (
-            <article key={item.id.toString()} className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+            <article key={item.id.toString()} className="dashboard-card p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="font-semibold">{item.title}</p>
@@ -517,7 +517,7 @@ export function AdvancedFeaturePanel({
           );
         })}
         {!items.length ? (
-          <p className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[var(--ink-soft)]">
+          <p className="dashboard-card p-4 text-sm text-[var(--ink-soft)]">
             No records yet for this module.
           </p>
         ) : null}

@@ -107,7 +107,7 @@ export default function DepartmentsPage() {
       {message ? <p className="mt-2 text-sm text-[var(--ink-soft)]">{message}</p> : null}
 
       <section className="mt-5 grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+        <article className="dashboard-card p-4">
           <h2 className="text-lg font-semibold tracking-tight">Active departments</h2>
           {data.departments.length > DEPARTMENTS_DISPLAY_LIMIT ? (
             <p className="mt-1 text-xs text-[var(--ink-soft)]">
@@ -127,7 +127,7 @@ export default function DepartmentsPage() {
           </div>
         </article>
 
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+        <article className="dashboard-card p-4">
           <h2 className="text-lg font-semibold tracking-tight">Permission bands</h2>
           <div className="mt-3 space-y-2 text-sm">
             {data.permissionBands.map((item) => (
@@ -140,7 +140,7 @@ export default function DepartmentsPage() {
         </article>
       </section>
 
-      <section className="mt-4 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+      <section className="mt-4 dashboard-card p-4">
         <h2 className="text-lg font-semibold tracking-tight">Live PRC staff roster</h2>
         {!data.prc?.connected ? (
           <p className="mt-2 text-sm text-[var(--ink-soft)]">Connect ER:LC to map live staff by rank/permission.</p>

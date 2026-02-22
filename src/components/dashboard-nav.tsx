@@ -28,49 +28,55 @@ type ModulePreferences = {
 
 const navSections: Array<{
   title: string;
-  links: Array<{ href: string; label: string; moduleKey: keyof ModulePreferences | null }>;
+  links: Array<{
+    href: string;
+    label: string;
+    hint: string;
+    marker: string;
+    moduleKey: keyof ModulePreferences | null;
+  }>;
 }> = [
   {
-    title: "Core",
+    title: "Workspace",
     links: [
-      { href: "/app", label: "Overview", moduleKey: null },
-      { href: "/app/onboarding", label: "Onboarding", moduleKey: null },
-      { href: "/app/integrations", label: "Integrations", moduleKey: null },
-      { href: "/app/settings", label: "Settings", moduleKey: null },
+      { href: "/app", label: "Overview", hint: "Live command center", marker: "OV", moduleKey: null },
+      { href: "/app/onboarding", label: "Onboarding", hint: "Finish initial setup", marker: "ON", moduleKey: null },
+      { href: "/app/integrations", label: "Integrations", hint: "ER:LC and Discord links", marker: "IN", moduleKey: null },
+      { href: "/app/settings", label: "Settings", hint: "Workspace defaults", marker: "ST", moduleKey: null },
     ],
   },
   {
     title: "Operations",
     links: [
-      { href: "/app/moderation", label: "Moderation", moduleKey: "enableModeration" },
-      { href: "/app/activity", label: "Activity", moduleKey: "enableActivity" },
-      { href: "/app/infractions", label: "Infractions", moduleKey: "enableInfractions" },
-      { href: "/app/sessions", label: "Sessions", moduleKey: "enableSessions" },
-      { href: "/app/departments", label: "Departments", moduleKey: "enableDepartments" },
-      { href: "/app/alerts", label: "Alerts", moduleKey: "enableAlerts" },
-      { href: "/app/team", label: "Teams", moduleKey: "enableTeams" },
+      { href: "/app/moderation", label: "Moderation", hint: "Cases and quick actions", marker: "MO", moduleKey: "enableModeration" },
+      { href: "/app/activity", label: "Activity", hint: "Staff analytics", marker: "AC", moduleKey: "enableActivity" },
+      { href: "/app/infractions", label: "Infractions", hint: "Punishment records", marker: "IF", moduleKey: "enableInfractions" },
+      { href: "/app/sessions", label: "Sessions", hint: "Session planning", marker: "SE", moduleKey: "enableSessions" },
+      { href: "/app/departments", label: "Departments", hint: "Org structure", marker: "DP", moduleKey: "enableDepartments" },
+      { href: "/app/alerts", label: "Alerts", hint: "Discord + in-app alerts", marker: "AL", moduleKey: "enableAlerts" },
+      { href: "/app/team", label: "Teams", hint: "Team members", marker: "TM", moduleKey: "enableTeams" },
     ],
   },
   {
     title: "Governance",
     links: [
-      { href: "/app/rbac", label: "RBAC", moduleKey: "enableRbac" },
-      { href: "/app/workflows", label: "Workflows", moduleKey: "enableWorkflows" },
-      { href: "/app/appeals", label: "Appeals", moduleKey: "enableAppeals" },
-      { href: "/app/profiles", label: "Profiles", moduleKey: "enableProfiles" },
-      { href: "/app/logs", label: "Audit Logs", moduleKey: "enableLogs" },
+      { href: "/app/rbac", label: "RBAC", hint: "Permission control", marker: "RB", moduleKey: "enableRbac" },
+      { href: "/app/workflows", label: "Workflows", hint: "Approval paths", marker: "WF", moduleKey: "enableWorkflows" },
+      { href: "/app/appeals", label: "Appeals", hint: "Appeal lifecycle", marker: "AP", moduleKey: "enableAppeals" },
+      { href: "/app/profiles", label: "Profiles", hint: "Staff profiles", marker: "PR", moduleKey: "enableProfiles" },
+      { href: "/app/logs", label: "Audit Logs", hint: "Historical actions", marker: "LG", moduleKey: "enableLogs" },
     ],
   },
   {
     title: "Automation",
     links: [
-      { href: "/app/automation", label: "Automation", moduleKey: "enableAutomation" },
-      { href: "/app/realtime", label: "Realtime", moduleKey: "enableRealtime" },
-      { href: "/app/commands", label: "Commands", moduleKey: "enableCommands" },
-      { href: "/app/backups", label: "Backups", moduleKey: "enableBackups" },
-      { href: "/app/api-keys", label: "API Keys", moduleKey: "enableApiKeys" },
-      { href: "/app/observability", label: "Observability", moduleKey: "enableObservability" },
-      { href: "/app/billing", label: "Billing", moduleKey: "enableBilling" },
+      { href: "/app/automation", label: "Automation", hint: "Rules and triggers", marker: "AU", moduleKey: "enableAutomation" },
+      { href: "/app/realtime", label: "Realtime", hint: "Live streams", marker: "RT", moduleKey: "enableRealtime" },
+      { href: "/app/commands", label: "Commands", hint: "Command relay", marker: "CM", moduleKey: "enableCommands" },
+      { href: "/app/backups", label: "Backups", hint: "Snapshot backups", marker: "BK", moduleKey: "enableBackups" },
+      { href: "/app/api-keys", label: "API Keys", hint: "Key management", marker: "AK", moduleKey: "enableApiKeys" },
+      { href: "/app/observability", label: "Observability", hint: "System health", marker: "OB", moduleKey: "enableObservability" },
+      { href: "/app/billing", label: "Billing", hint: "Future billing", marker: "BL", moduleKey: "enableBilling" },
     ],
   },
 ];
@@ -126,7 +132,7 @@ export function DashboardNav() {
         return [
           {
             title: "Setup",
-            links: [{ href: "/app/onboarding", label: "Onboarding", moduleKey: null }],
+            links: [{ href: "/app/onboarding", label: "Onboarding", hint: "Complete initial setup", marker: "ON", moduleKey: null }],
           },
         ];
       }
@@ -164,7 +170,13 @@ export function DashboardNav() {
                   href={link.href}
                   className={`dashboard-nav-link${isActive ? " active" : ""}`}
                 >
-                  {link.label}
+                  <span className="dashboard-nav-link-row">
+                    <span className="dashboard-nav-badge" aria-hidden>{link.marker}</span>
+                    <span className="dashboard-nav-link-text">
+                      <span className="dashboard-nav-link-title">{link.label}</span>
+                      <span className="dashboard-nav-link-hint">{link.hint}</span>
+                    </span>
+                  </span>
                 </Link>
               );
             })}

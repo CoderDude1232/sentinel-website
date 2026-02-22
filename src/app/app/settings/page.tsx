@@ -154,7 +154,7 @@ export default function SettingsPage() {
       {message ? <p className="mt-2 text-sm text-[var(--ink-soft)]">{message}</p> : null}
 
       <form onSubmit={saveSettings} className="mt-5 space-y-4">
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+        <article className="dashboard-card p-4">
           <h2 className="text-lg font-semibold tracking-tight">Workspace Defaults</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="text-sm text-[var(--ink-soft)]">
@@ -176,7 +176,7 @@ export default function SettingsPage() {
           </div>
         </article>
 
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+        <article className="dashboard-card p-4">
           <h2 className="text-lg font-semibold tracking-tight">Retention and Notifications</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="text-sm text-[var(--ink-soft)]">
@@ -214,7 +214,7 @@ export default function SettingsPage() {
           </label>
         </article>
 
-        <article className="rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+        <article className="dashboard-card p-4">
           <h2 className="text-lg font-semibold tracking-tight">Enabled Modules</h2>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
             Turn modules on/off for your workspace while keeping data saved.

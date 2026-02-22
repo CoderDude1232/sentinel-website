@@ -155,7 +155,7 @@ export default function OnboardingPage() {
       ) : null}
       {message ? <p className="mt-2 text-sm text-[var(--ink-soft)]">{message}</p> : null}
 
-      <section className="mt-5 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+      <section className="mt-5 dashboard-card p-4">
         <h2 className="text-lg font-semibold tracking-tight">1. Enable modules</h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {[
@@ -179,7 +179,7 @@ export default function OnboardingPage() {
         </div>
       </section>
 
-      <section className="mt-4 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+      <section className="mt-4 dashboard-card p-4">
         <h2 className="text-lg font-semibold tracking-tight">2. Base settings</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="text-sm text-[var(--ink-soft)]">
@@ -215,7 +215,7 @@ export default function OnboardingPage() {
         </label>
       </section>
 
-      <section className="mt-4 rounded-xl border border-[var(--line)] bg-[rgba(255,255,255,0.04)] p-4">
+      <section className="mt-4 dashboard-card p-4">
         <h2 className="text-lg font-semibold tracking-tight">3. Connect ER:LC</h2>
         <p className="mt-2 text-sm text-[var(--ink-soft)]">
           Status: <span className="text-[var(--ink-strong)]">{erlcConnected ? "Connected" : "Not connected"}</span>
