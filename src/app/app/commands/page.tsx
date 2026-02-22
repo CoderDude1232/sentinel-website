@@ -248,23 +248,25 @@ export default function CommandsPage() {
           meta={live.connected ? "Connected" : "Disconnected"}
         >
           {live.connected ? (
-            <div className="grid gap-2 sm:grid-cols-4">
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Server</p>
-                <p className="mt-1 text-sm font-semibold">{live.serverName ?? "Unknown"}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Players</p>
-                <p className="mt-1 text-sm font-semibold">{live.playerCount ?? "N/A"}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Queue</p>
-                <p className="mt-1 text-sm font-semibold">{live.queueCount ?? "N/A"}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Tracked players</p>
-                <p className="mt-1 text-sm font-semibold">{onlinePlayers.length}</p>
-              </div>
+            <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                  <tr className="border-b border-[var(--line)]">
+                    <th className="px-3 py-2.5">Server</th>
+                    <th className="px-3 py-2.5">Players</th>
+                    <th className="px-3 py-2.5">Queue</th>
+                    <th className="px-3 py-2.5">Tracked players</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="px-3 py-2.5 font-semibold">{live.serverName ?? "Unknown"}</td>
+                    <td className="px-3 py-2.5">{live.playerCount ?? "N/A"}</td>
+                    <td className="px-3 py-2.5">{live.queueCount ?? "N/A"}</td>
+                    <td className="px-3 py-2.5">{onlinePlayers.length}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           ) : (
             <p className="text-sm text-[var(--ink-soft)]">
@@ -378,33 +380,53 @@ export default function CommandsPage() {
               Showing {visibleExecutions.length} of {executions.length} submissions.
             </p>
           ) : null}
-          <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1 text-sm">
-            {visibleExecutions.map((entry) => {
-              const isGlobal = entry.targetPlayer === "GLOBAL";
-              const target = isGlobal ? null : playerDirectory.get(entry.targetPlayer.toLowerCase()) ?? null;
-              return (
-              <div key={entry.id.toString()} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="flex items-center gap-2 font-semibold">
-                    {!isGlobal && target?.avatarUrl ? (
-                      <img src={target.avatarUrl} alt="" className="h-6 w-6 rounded-full border border-[var(--line)]" />
-                    ) : null}
-                    <span>
-                      {entry.command} ? {isGlobal ? "Global" : target?.username ?? entry.targetPlayer}
-                    </span>
-                  </p>
-                  <span className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
-                    {entry.result}
-                  </span>
-                </div>
-                <p className="text-xs text-[var(--ink-soft)]">
-                  {entry.actor} via {entry.source} • {new Date(entry.createdAt).toLocaleString()}
-                </p>
-                {entry.notes ? <p className="mt-1 text-xs text-[var(--ink-soft)]">{entry.notes}</p> : null}
-              </div>
-              );
-            })}
-            {!executions.length ? <p className="text-[var(--ink-soft)]">No command submissions yet.</p> : null}
+          <div className="max-h-[620px] overflow-y-auto pr-1">
+            <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                  <tr className="border-b border-[var(--line)]">
+                    <th className="px-3 py-2.5">Command</th>
+                    <th className="px-3 py-2.5">Target</th>
+                    <th className="px-3 py-2.5">Result</th>
+                    <th className="px-3 py-2.5">Actor / Source</th>
+                    <th className="px-3 py-2.5">Created</th>
+                    <th className="px-3 py-2.5">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleExecutions.map((entry) => {
+                    const isGlobal = entry.targetPlayer === "GLOBAL";
+                    const target = isGlobal ? null : playerDirectory.get(entry.targetPlayer.toLowerCase()) ?? null;
+                    return (
+                      <tr key={entry.id.toString()} className="border-b border-[var(--line)] last:border-b-0">
+                        <td className="px-3 py-2.5 font-semibold">{entry.command}</td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-2">
+                            {!isGlobal && target?.avatarUrl ? (
+                              <img src={target.avatarUrl} alt="" className="h-5 w-5 rounded-full border border-[var(--line)]" />
+                            ) : null}
+                            <span>{isGlobal ? "Global" : target?.username ?? entry.targetPlayer}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5 uppercase tracking-[0.08em]">{entry.result}</td>
+                        <td className="px-3 py-2.5">{entry.actor} / {entry.source}</td>
+                        <td className="px-3 py-2.5 text-xs text-[var(--ink-soft)]">
+                          {new Date(entry.createdAt).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2.5 text-xs text-[var(--ink-soft)]">{entry.notes ?? "-"}</td>
+                      </tr>
+                    );
+                  })}
+                  {!executions.length ? (
+                    <tr>
+                      <td className="px-3 py-3 text-[var(--ink-soft)]" colSpan={6}>
+                        No command submissions yet.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
           </div>
         </CollapsibleSection>
       </section>

@@ -164,25 +164,27 @@ export default function SessionsPage() {
           meta={data.live.connected ? "Connected" : "Disconnected"}
         >
           {data.live.connected ? (
-            <div className="grid gap-2 sm:grid-cols-4">
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Server</p>
-                <p className="mt-1 text-sm font-semibold">{data.live.serverName ?? "Unknown"}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Players</p>
-                <p className="mt-1 text-sm font-semibold">{data.live.playerCount ?? "N/A"}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Queue</p>
-                <p className="mt-1 text-sm font-semibold">{data.live.queueCount ?? "N/A"}</p>
-              </div>
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Fetched</p>
-                <p className="mt-1 text-sm font-semibold">
-                  {data.live.fetchedAt ? new Date(data.live.fetchedAt).toLocaleTimeString() : "Now"}
-                </p>
-              </div>
+            <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                  <tr className="border-b border-[var(--line)]">
+                    <th className="px-3 py-2.5">Server</th>
+                    <th className="px-3 py-2.5">Players</th>
+                    <th className="px-3 py-2.5">Queue</th>
+                    <th className="px-3 py-2.5">Fetched</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="px-3 py-2.5 font-semibold">{data.live.serverName ?? "Unknown"}</td>
+                    <td className="px-3 py-2.5">{data.live.playerCount ?? "N/A"}</td>
+                    <td className="px-3 py-2.5">{data.live.queueCount ?? "N/A"}</td>
+                    <td className="px-3 py-2.5">
+                      {data.live.fetchedAt ? new Date(data.live.fetchedAt).toLocaleTimeString() : "Now"}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           ) : (
             <p className="text-sm text-[var(--ink-soft)]">Connect ER:LC in Integrations for live session context.</p>
@@ -302,33 +304,68 @@ export default function SessionsPage() {
               Showing {UPCOMING_DISPLAY_LIMIT} of {data.upcoming.length} sessions.
             </p>
           ) : null}
-          <div className="max-h-[560px] space-y-2 overflow-y-auto pr-1 text-sm">
-            {data.upcoming.slice(0, UPCOMING_DISPLAY_LIMIT).map((session) => (
-              <div
-                key={session.id.toString()}
-                className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2"
-              >
-                <p className="font-semibold">{session.title}</p>
-                <p className="text-[var(--ink-soft)]">
-                  Starts {new Date(session.startsAt).toLocaleString()} • Host: {session.host}
-                </p>
-                <p className="text-xs text-[var(--ink-soft)]">
-                  Staffing: {session.staffingCurrent}/{session.staffingTarget} • {session.status}
-                </p>
-              </div>
-            ))}
-            {!data.upcoming.length ? <p className="text-[var(--ink-soft)]">No sessions scheduled yet.</p> : null}
+          <div className="max-h-[560px] overflow-y-auto pr-1">
+            <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                  <tr className="border-b border-[var(--line)]">
+                    <th className="px-3 py-2.5">Title</th>
+                    <th className="px-3 py-2.5">Starts</th>
+                    <th className="px-3 py-2.5">Host</th>
+                    <th className="px-3 py-2.5">Staffing</th>
+                    <th className="px-3 py-2.5">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.upcoming.slice(0, UPCOMING_DISPLAY_LIMIT).map((session) => (
+                    <tr key={session.id.toString()} className="border-b border-[var(--line)] last:border-b-0">
+                      <td className="px-3 py-2.5 font-semibold">{session.title}</td>
+                      <td className="px-3 py-2.5">{new Date(session.startsAt).toLocaleString()}</td>
+                      <td className="px-3 py-2.5">{session.host}</td>
+                      <td className="px-3 py-2.5">
+                        {session.staffingCurrent}/{session.staffingTarget}
+                      </td>
+                      <td className="px-3 py-2.5">{session.status}</td>
+                    </tr>
+                  ))}
+                  {!data.upcoming.length ? (
+                    <tr>
+                      <td className="px-3 py-3 text-[var(--ink-soft)]" colSpan={5}>
+                        No sessions scheduled yet.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
           </div>
         </CollapsibleSection>
 
         <CollapsibleSection title="Performance snapshot" subtitle="Attendance and moderation load trends.">
-          <div className="grid gap-2 sm:grid-cols-2">
-            {data.performance.map((item) => (
-              <div key={item.label} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">{item.label}</p>
-                <p className="mt-1 text-xl font-semibold">{item.value}</p>
-              </div>
-            ))}
+          <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                <tr className="border-b border-[var(--line)]">
+                  <th className="px-3 py-2.5">Metric</th>
+                  <th className="px-3 py-2.5">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.performance.map((item) => (
+                  <tr key={item.label} className="border-b border-[var(--line)] last:border-b-0">
+                    <td className="px-3 py-2.5 font-semibold">{item.label}</td>
+                    <td className="px-3 py-2.5">{item.value}</td>
+                  </tr>
+                ))}
+                {!data.performance.length ? (
+                  <tr>
+                    <td className="px-3 py-3 text-[var(--ink-soft)]" colSpan={2}>
+                      No performance metrics yet.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
           </div>
         </CollapsibleSection>
       </section>

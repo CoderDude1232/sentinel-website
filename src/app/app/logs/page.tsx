@@ -203,40 +203,52 @@ export default function LogsPage() {
               Showing {Math.min(visibleEvents.length, events.length)} of {events.length}
             </span>
           </div>
-          <div className="mt-3 max-h-[720px] space-y-2 overflow-y-auto pr-1 text-sm">
-            {visibleEvents.map((event) => {
-              const hasPayload = Boolean(event.beforeState || event.afterState || event.metadata);
-              return (
-                <article key={event.id.toString()} className="dashboard-feed-item rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.025)] p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold">{event.module} - {event.action}</p>
-                    <span className="text-xs text-[var(--ink-soft)]">{formatTimestamp(event.createdAt)}</span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-full border border-[var(--line)] px-2 py-0.5 text-[var(--ink-soft)]">
-                      Actor: {event.actor}
-                    </span>
-                    {event.subject ? (
-                      <span className="rounded-full border border-[var(--line)] px-2 py-0.5 text-[var(--ink-soft)]">
-                        Subject: {event.subject}
-                      </span>
-                    ) : null}
-                    <span className="rounded-full border border-[var(--line)] px-2 py-0.5 text-[var(--ink-soft)]">
-                      Event #{event.id}
-                    </span>
-                  </div>
-                  {hasPayload ? (
-                    <details className="mt-2 rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
-                      <summary className="cursor-pointer px-2 py-1.5 text-xs text-[var(--ink-soft)]">View payload</summary>
-                      <pre className="max-h-[220px] overflow-auto border-t border-[var(--line)] px-2 py-2 text-xs text-[var(--ink-soft)]">
-                        {JSON.stringify({ before: event.beforeState, after: event.afterState, metadata: event.metadata }, null, 2)}
-                      </pre>
-                    </details>
+          <div className="mt-3 max-h-[720px] overflow-y-auto pr-1">
+            <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                  <tr className="border-b border-[var(--line)]">
+                    <th className="px-3 py-2.5">Module / Action</th>
+                    <th className="px-3 py-2.5">Actor</th>
+                    <th className="px-3 py-2.5">Subject</th>
+                    <th className="px-3 py-2.5">Time</th>
+                    <th className="px-3 py-2.5">Payload</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleEvents.map((event) => {
+                    const hasPayload = Boolean(event.beforeState || event.afterState || event.metadata);
+                    return (
+                      <tr key={event.id.toString()} className="border-b border-[var(--line)] last:border-b-0">
+                        <td className="px-3 py-2.5 font-semibold">{event.module} / {event.action}</td>
+                        <td className="px-3 py-2.5">{event.actor}</td>
+                        <td className="px-3 py-2.5">{event.subject ?? "-"}</td>
+                        <td className="px-3 py-2.5 text-xs text-[var(--ink-soft)]">{formatTimestamp(event.createdAt)}</td>
+                        <td className="px-3 py-2.5">
+                          {hasPayload ? (
+                            <details className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                              <summary className="cursor-pointer px-2 py-1 text-xs text-[var(--ink-soft)]">View JSON</summary>
+                              <pre className="max-h-[180px] overflow-auto border-t border-[var(--line)] px-2 py-1.5 text-xs text-[var(--ink-soft)]">
+                                {JSON.stringify({ before: event.beforeState, after: event.afterState, metadata: event.metadata }, null, 2)}
+                              </pre>
+                            </details>
+                          ) : (
+                            <span className="text-xs text-[var(--ink-soft)]">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {!events.length ? (
+                    <tr>
+                      <td className="px-3 py-3 text-[var(--ink-soft)]" colSpan={5}>
+                        No audit events match current filters.
+                      </td>
+                    </tr>
                   ) : null}
-                </article>
-              );
-            })}
-            {!events.length ? <p className="text-[var(--ink-soft)]">No audit events match current filters.</p> : null}
+                </tbody>
+              </table>
+            </div>
           </div>
         </article>
 
@@ -269,16 +281,36 @@ export default function LogsPage() {
                       Showing {DISPLAY_LIMITS.prcColumn} of {column.items.length}
                     </p>
                   ) : null}
-                  <div className="mt-2 max-h-[300px] space-y-2 overflow-y-auto pr-1 text-xs">
-                    {column.items.slice(0, DISPLAY_LIMITS.prcColumn).map((item, index) => (
-                      <div key={`${column.title}-${item.primary}-${index}`} className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-2">
-                        <p className="font-semibold text-sm">{item.primary}</p>
-                        {item.secondary ? <p className="text-[var(--ink-soft)]">{item.secondary}</p> : null}
-                        {item.detail ? <p className="text-[var(--ink-soft)]">{item.detail}</p> : null}
-                        <p className="mt-1 text-[10px] text-[var(--ink-soft)]">{formatTimestamp(item.occurredAt)}</p>
-                      </div>
-                    ))}
-                    {!column.items.length ? <p className="text-[var(--ink-soft)]">No entries.</p> : null}
+                  <div className="mt-2 max-h-[300px] overflow-y-auto pr-1 text-xs">
+                    <div className="overflow-x-auto rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                      <table className="min-w-full text-left text-xs">
+                        <thead className="text-[10px] uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                          <tr className="border-b border-[var(--line)]">
+                            <th className="px-2 py-1.5">Primary</th>
+                            <th className="px-2 py-1.5">Secondary</th>
+                            <th className="px-2 py-1.5">Detail</th>
+                            <th className="px-2 py-1.5">Time</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {column.items.slice(0, DISPLAY_LIMITS.prcColumn).map((item, index) => (
+                            <tr key={`${column.title}-${item.primary}-${index}`} className="border-b border-[var(--line)] last:border-b-0">
+                              <td className="px-2 py-1.5 font-semibold">{item.primary}</td>
+                              <td className="px-2 py-1.5">{item.secondary ?? "-"}</td>
+                              <td className="px-2 py-1.5">{item.detail ?? "-"}</td>
+                              <td className="px-2 py-1.5">{formatTimestamp(item.occurredAt)}</td>
+                            </tr>
+                          ))}
+                          {!column.items.length ? (
+                            <tr>
+                              <td className="px-2 py-2 text-[var(--ink-soft)]" colSpan={4}>
+                                No entries.
+                              </td>
+                            </tr>
+                          ) : null}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               ))}

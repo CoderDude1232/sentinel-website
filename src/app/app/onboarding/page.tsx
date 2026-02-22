@@ -157,7 +157,15 @@ export default function OnboardingPage() {
 
       <section className="mt-5 dashboard-card p-4">
         <h2 className="text-lg font-semibold tracking-tight">1. Enable modules</h2>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+              <tr className="border-b border-[var(--line)]">
+                <th className="px-3 py-2.5">Module</th>
+                <th className="px-3 py-2.5">Enabled</th>
+              </tr>
+            </thead>
+            <tbody>
           {[
             ["enableModeration", "Moderation"],
             ["enableActivity", "Activity"],
@@ -165,17 +173,26 @@ export default function OnboardingPage() {
             ["enableSessions", "Sessions"],
             ["enableDepartments", "Departments"],
             ["enableAlerts", "Alerts"],
-          ].map(([key, label]) => (
-            <label key={key} className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm">
-              <input
-                type="checkbox"
-                className="ui-checkbox"
-                checked={preferences[key as keyof OnboardingResponse["preferences"]]}
-                onChange={() => togglePreference(key as keyof OnboardingResponse["preferences"])}
-              />
-              {label}
-            </label>
-          ))}
+            ].map(([key, label]) => (
+              <tr key={key} className="border-b border-[var(--line)] last:border-b-0">
+                <td className="px-3 py-2.5 font-semibold">{label}</td>
+                <td className="px-3 py-2.5">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="ui-checkbox"
+                      checked={preferences[key as keyof OnboardingResponse["preferences"]]}
+                      onChange={() => togglePreference(key as keyof OnboardingResponse["preferences"])}
+                    />
+                    <span className="text-xs text-[var(--ink-soft)]">
+                      {preferences[key as keyof OnboardingResponse["preferences"]] ? "On" : "Off"}
+                    </span>
+                  </label>
+                </td>
+              </tr>
+            ))}
+            </tbody>
+          </table>
         </div>
       </section>
 

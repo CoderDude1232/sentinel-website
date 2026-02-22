@@ -320,13 +320,30 @@ export default function InfractionsPage() {
           subtitle="Current counts by disciplinary level."
           meta={`${data.totals.cases} cases`}
         >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {data.stats.map((item) => (
-              <article key={item.type} className="dashboard-card p-4">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">{item.type}</p>
-                <p className="mt-1 text-2xl font-semibold">{item.count}</p>
-              </article>
-            ))}
+          <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                <tr className="border-b border-[var(--line)]">
+                  <th className="px-3 py-2.5">Level</th>
+                  <th className="px-3 py-2.5">Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.stats.map((item) => (
+                  <tr key={item.type} className="border-b border-[var(--line)] last:border-b-0">
+                    <td className="px-3 py-2.5 font-semibold">{item.type}</td>
+                    <td className="px-3 py-2.5">{item.count}</td>
+                  </tr>
+                ))}
+                {!data.stats.length ? (
+                  <tr>
+                    <td className="px-3 py-3 text-[var(--ink-soft)]" colSpan={2}>
+                      No infraction stats available yet.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
           </div>
         </CollapsibleSection>
 
@@ -344,19 +361,38 @@ export default function InfractionsPage() {
                   Showing {PRC_BANS_DISPLAY_LIMIT} of {data.prc.bans.length} bans.
                 </p>
               ) : null}
-            <div className="max-h-[460px] space-y-2 overflow-y-auto pr-1 text-sm">
-              {data.prc.bans.slice(0, PRC_BANS_DISPLAY_LIMIT).map((item, index) => (
-                <div key={`${item.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                  <p className="font-semibold">{item.primary}</p>
-                  {item.detail ? <p className="text-[var(--ink-soft)]">{item.detail}</p> : null}
-                  {item.occurredAt ? (
-                    <p className="text-xs text-[var(--ink-soft)]">
-                      Recorded: {formatTimestamp(item.occurredAt) ?? item.occurredAt}
-                    </p>
-                  ) : null}
-                </div>
-              ))}
-              {!data.prc.bans.length ? <p className="text-[var(--ink-soft)]">No active bans returned by PRC.</p> : null}
+            <div className="max-h-[460px] overflow-y-auto pr-1">
+              <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                    <tr className="border-b border-[var(--line)]">
+                      <th className="px-3 py-2.5">Primary</th>
+                      <th className="px-3 py-2.5">Secondary</th>
+                      <th className="px-3 py-2.5">Detail</th>
+                      <th className="px-3 py-2.5">Recorded</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.prc.bans.slice(0, PRC_BANS_DISPLAY_LIMIT).map((item, index) => (
+                      <tr key={`${item.primary}-${index}`} className="border-b border-[var(--line)] last:border-b-0">
+                        <td className="px-3 py-2.5 font-semibold">{item.primary}</td>
+                        <td className="px-3 py-2.5">{item.secondary ?? "-"}</td>
+                        <td className="px-3 py-2.5">{item.detail ?? "-"}</td>
+                        <td className="px-3 py-2.5 text-xs text-[var(--ink-soft)]">
+                          {item.occurredAt ? formatTimestamp(item.occurredAt) ?? item.occurredAt : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                    {!data.prc.bans.length ? (
+                      <tr>
+                        <td className="px-3 py-3 text-[var(--ink-soft)]" colSpan={4}>
+                          No active bans returned by PRC.
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
             </div>
             </>
           )}
@@ -445,26 +481,42 @@ export default function InfractionsPage() {
               Showing {CASE_DISPLAY_LIMIT} of {data.cases.length} cases.
             </p>
           ) : null}
-          <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1 text-sm">
-            {data.cases.slice(0, CASE_DISPLAY_LIMIT).map((item) => (
-              <div
-                key={item.id.toString()}
-                className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold">{item.caseRef} - {item.level}</p>
-                  <span className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
-                    Appeal: {item.appealStatus}
-                  </span>
-                </div>
-                <p className="text-[var(--ink-soft)]">Target: {item.target}</p>
-                <p className="text-xs text-[var(--ink-soft)]">Issued by: {item.issuer}</p>
-                <p className="text-xs text-[var(--ink-soft)]">
-                  Logged: {formatTimestamp(item.createdAt) ?? item.createdAt}
-                </p>
-              </div>
-            ))}
-            {!data.cases.length ? <p className="text-[var(--ink-soft)]">No infractions logged yet.</p> : null}
+          <div className="max-h-[620px] overflow-y-auto pr-1">
+            <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                  <tr className="border-b border-[var(--line)]">
+                    <th className="px-3 py-2.5">Case</th>
+                    <th className="px-3 py-2.5">Level</th>
+                    <th className="px-3 py-2.5">Target</th>
+                    <th className="px-3 py-2.5">Issuer</th>
+                    <th className="px-3 py-2.5">Appeal</th>
+                    <th className="px-3 py-2.5">Logged</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.cases.slice(0, CASE_DISPLAY_LIMIT).map((item) => (
+                    <tr key={item.id.toString()} className="border-b border-[var(--line)] last:border-b-0">
+                      <td className="px-3 py-2.5 font-semibold">{item.caseRef}</td>
+                      <td className="px-3 py-2.5">{item.level}</td>
+                      <td className="px-3 py-2.5">{item.target}</td>
+                      <td className="px-3 py-2.5">{item.issuer}</td>
+                      <td className="px-3 py-2.5">{item.appealStatus}</td>
+                      <td className="px-3 py-2.5 text-xs text-[var(--ink-soft)]">
+                        {formatTimestamp(item.createdAt) ?? item.createdAt}
+                      </td>
+                    </tr>
+                  ))}
+                  {!data.cases.length ? (
+                    <tr>
+                      <td className="px-3 py-3 text-[var(--ink-soft)]" colSpan={6}>
+                        No infractions logged yet.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
           </div>
         </CollapsibleSection>
       </section>

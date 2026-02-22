@@ -367,23 +367,33 @@ export function AdvancedFeaturePanel({
         </div>
 
         {erlcSnapshot ? (
-          <div className="mt-3 grid gap-2 sm:grid-cols-4">
-            <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-              <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Server</p>
-              <p className="mt-1 text-sm font-semibold">{erlcSnapshot.serverName ?? "Unknown"}</p>
-            </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-              <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Players</p>
-              <p className="mt-1 text-sm font-semibold">{erlcSnapshot.playerCount ?? "N/A"}</p>
-            </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-              <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Queue</p>
-              <p className="mt-1 text-sm font-semibold">{erlcSnapshot.queueCount ?? "N/A"}</p>
-            </div>
-            <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-              <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Status</p>
-              <p className="mt-1 text-sm font-semibold">{erlcSnapshot.connected ? "Connected" : "Disconnected"}</p>
-            </div>
+          <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                <tr className="border-b border-[var(--line)]">
+                  <th className="px-3 py-2.5">Server</th>
+                  <th className="px-3 py-2.5">Status</th>
+                  <th className="px-3 py-2.5">Players</th>
+                  <th className="px-3 py-2.5">Queue</th>
+                  <th className="px-3 py-2.5">Region</th>
+                  <th className="px-3 py-2.5">Uptime</th>
+                  <th className="px-3 py-2.5">Fetched</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="px-3 py-2.5 font-semibold">{erlcSnapshot.serverName ?? "Unknown"}</td>
+                  <td className="px-3 py-2.5">{erlcSnapshot.connected ? "Connected" : "Disconnected"}</td>
+                  <td className="px-3 py-2.5">{erlcSnapshot.playerCount ?? "N/A"}</td>
+                  <td className="px-3 py-2.5">{erlcSnapshot.queueCount ?? "N/A"}</td>
+                  <td className="px-3 py-2.5">{erlcSnapshot.serverRegion ?? "N/A"}</td>
+                  <td className="px-3 py-2.5">{erlcSnapshot.uptime ?? "N/A"}</td>
+                  <td className="px-3 py-2.5">
+                    {new Date(erlcSnapshot.fetchedAt).toLocaleString()}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         ) : (
           <p className="mt-3 text-sm text-[var(--ink-soft)]">
@@ -476,51 +486,67 @@ export function AdvancedFeaturePanel({
         </form>
       </section>
 
-      <section className="mt-5 space-y-2">
-        {items.map((item) => {
-          const subject = asString(item.payload.subject);
-          const liveContext = asRecord(item.payload.liveContext);
-          const linkedServer = asString(liveContext?.serverName);
-          const linkedPlayers = asNumber(liveContext?.playerCount);
+      <section className="mt-5 dashboard-card p-4">
+        <h2 className="text-lg font-semibold tracking-tight">Module records</h2>
+        <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+              <tr className="border-b border-[var(--line)]">
+                <th className="px-3 py-2.5">Title</th>
+                <th className="px-3 py-2.5">Subject</th>
+                <th className="px-3 py-2.5">Server</th>
+                <th className="px-3 py-2.5">Players</th>
+                <th className="px-3 py-2.5">Status</th>
+                <th className="px-3 py-2.5">Updated</th>
+                <th className="px-3 py-2.5">Payload</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => {
+                const subject = asString(item.payload.subject);
+                const liveContext = asRecord(item.payload.liveContext);
+                const linkedServer = asString(liveContext?.serverName);
+                const linkedPlayers = asNumber(liveContext?.playerCount);
 
-          return (
-            <article key={item.id.toString()} className="dashboard-card p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="font-semibold">{item.title}</p>
-                  <div className="mt-1 flex flex-wrap gap-1.5 text-xs text-[var(--ink-soft)]">
-                    {subject ? (
-                      <span className="rounded-full border border-[var(--line)] px-2 py-0.5">Subject: {subject}</span>
-                    ) : null}
-                    {linkedServer ? (
-                      <span className="rounded-full border border-[var(--line)] px-2 py-0.5">Server: {linkedServer}</span>
-                    ) : null}
-                    {linkedPlayers !== null ? (
-                      <span className="rounded-full border border-[var(--line)] px-2 py-0.5">Players: {linkedPlayers}</span>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="w-full sm:w-[170px]">
-                  <UiSelect
-                    value={item.status}
-                    onChange={(value) => void updateStatus(item, value)}
-                    options={statusOptions}
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-              <p className="mt-2 text-xs text-[var(--ink-soft)]">Updated {new Date(item.updatedAt).toLocaleString()}</p>
-              <pre className="mt-2 overflow-x-auto rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-2 text-xs text-[var(--ink-soft)]">
-                {JSON.stringify(item.payload, null, 2)}
-              </pre>
-            </article>
-          );
-        })}
-        {!items.length ? (
-          <p className="dashboard-card p-4 text-sm text-[var(--ink-soft)]">
-            No records yet for this module.
-          </p>
-        ) : null}
+                return (
+                  <tr key={item.id.toString()} className="border-b border-[var(--line)] last:border-b-0">
+                    <td className="px-3 py-2.5 font-semibold">{item.title}</td>
+                    <td className="px-3 py-2.5">{subject ?? "-"}</td>
+                    <td className="px-3 py-2.5">{linkedServer ?? "-"}</td>
+                    <td className="px-3 py-2.5">{linkedPlayers ?? "-"}</td>
+                    <td className="px-3 py-2.5">
+                      <UiSelect
+                        value={item.status}
+                        onChange={(value) => void updateStatus(item, value)}
+                        options={statusOptions}
+                        disabled={loading}
+                        className="min-w-[140px]"
+                      />
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-[var(--ink-soft)]">
+                      {new Date(item.updatedAt).toLocaleString()}
+                    </td>
+                    <td className="px-3 py-2.5 align-top">
+                      <details className="rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                        <summary className="cursor-pointer px-2 py-1 text-xs text-[var(--ink-soft)]">View JSON</summary>
+                        <pre className="max-h-[180px] overflow-auto border-t border-[var(--line)] px-2 py-1.5 text-xs text-[var(--ink-soft)]">
+                          {JSON.stringify(item.payload, null, 2)}
+                        </pre>
+                      </details>
+                    </td>
+                  </tr>
+                );
+              })}
+              {!items.length ? (
+                <tr>
+                  <td className="px-3 py-3 text-sm text-[var(--ink-soft)]" colSpan={7}>
+                    No records yet for this module.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );

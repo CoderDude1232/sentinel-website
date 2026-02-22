@@ -821,22 +821,21 @@ body {
   gap: 0.55rem;
 }
 
-.dashboard-nav-badge {
+.dashboard-nav-icon {
   flex: 0 0 auto;
-  min-width: 1.55rem;
-  height: 1.55rem;
-  border-radius: 999px;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 0.52rem;
   border: 1px solid var(--line);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.56rem;
-  letter-spacing: 0.08em;
   color: var(--ink-soft);
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(255, 255, 255, 0.03);
+  transition: border-color 130ms ease, color 130ms ease, background-color 130ms ease;
 }
 
-.dashboard-nav-link.active .dashboard-nav-badge {
+.dashboard-nav-link.active .dashboard-nav-icon {
   border-color: rgba(216, 29, 56, 0.36);
   color: #ffd8df;
   background: rgba(216, 29, 56, 0.14);

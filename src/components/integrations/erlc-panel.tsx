@@ -321,93 +321,136 @@ export function ErlcPanel() {
             </p>
           ) : snapshot ? (
             <div className="mt-3 space-y-3 text-sm">
-              <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="text-[var(--ink-soft)]">Server</p>
-                <p className="text-lg font-semibold">
-                  {snapshot.serverName ?? "Unknown server name"}
-                </p>
-                <p className="text-xs text-[var(--ink-soft)]">
-                  Updated {new Date(snapshot.fetchedAt).toLocaleTimeString()}
-                </p>
+              <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                    <tr className="border-b border-[var(--line)]">
+                      <th className="px-3 py-2.5">Server</th>
+                      <th className="px-3 py-2.5">Players</th>
+                      <th className="px-3 py-2.5">Queue</th>
+                      <th className="px-3 py-2.5">Owner</th>
+                      <th className="px-3 py-2.5">Region</th>
+                      <th className="px-3 py-2.5">Join code</th>
+                      <th className="px-3 py-2.5">Uptime</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="px-3 py-2.5 font-semibold">{snapshot.serverName ?? "Unknown server name"}</td>
+                      <td className="px-3 py-2.5">
+                        {snapshot.playerCount ?? "N/A"}
+                        {snapshot.maxPlayers ? ` / ${snapshot.maxPlayers}` : ""}
+                      </td>
+                      <td className="px-3 py-2.5">{snapshot.queueCount ?? "N/A"}</td>
+                      <td className="px-3 py-2.5">{snapshot.serverOwner ?? "N/A"}</td>
+                      <td className="px-3 py-2.5">{snapshot.serverRegion ?? "N/A"}</td>
+                      <td className="px-3 py-2.5">{snapshot.joinCode ?? "N/A"}</td>
+                      <td className="px-3 py-2.5">{snapshot.uptime ?? "N/A"}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Players</p>
-                  <p className="mt-1 text-xl font-semibold">
-                    {snapshot.playerCount ?? "N/A"}
-                    {snapshot.maxPlayers ? ` / ${snapshot.maxPlayers}` : ""}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Queue</p>
-                  <p className="mt-1 text-xl font-semibold">{snapshot.queueCount ?? "N/A"}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Owner</p>
-                  <p className="mt-1 text-sm font-semibold">{snapshot.serverOwner ?? "N/A"}</p>
-                </div>
-                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Region</p>
-                  <p className="mt-1 text-sm font-semibold">{snapshot.serverRegion ?? "N/A"}</p>
-                </div>
-                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Join Code</p>
-                  <p className="mt-1 text-sm font-semibold">{snapshot.joinCode ?? "N/A"}</p>
-                </div>
-                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Uptime</p>
-                  <p className="mt-1 text-sm font-semibold">{snapshot.uptime ?? "N/A"}</p>
-                </div>
-              </div>
+              <p className="text-xs text-[var(--ink-soft)]">
+                Updated {new Date(snapshot.fetchedAt).toLocaleTimeString()}
+              </p>
 
               {snapshot.playersSample.length ? (
-                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Players Sample</p>
-                  <p className="mt-2 text-xs text-[var(--ink-soft)]">{snapshot.playersSample.join(", ")}</p>
+                <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                  <table className="min-w-full text-left text-xs">
+                    <thead className="uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                      <tr className="border-b border-[var(--line)]">
+                        <th className="px-3 py-2">Players Sample</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {snapshot.playersSample.map((player, index) => (
+                        <tr key={`${player}-${index}`} className="border-b border-[var(--line)] last:border-b-0">
+                          <td className="px-3 py-2">{player}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : null}
 
               {snapshot.queueSample.length ? (
-                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Queue Sample</p>
-                  <p className="mt-2 text-xs text-[var(--ink-soft)]">{snapshot.queueSample.join(", ")}</p>
+                <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                  <table className="min-w-full text-left text-xs">
+                    <thead className="uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                      <tr className="border-b border-[var(--line)]">
+                        <th className="px-3 py-2">Queue Sample</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {snapshot.queueSample.map((player, index) => (
+                        <tr key={`${player}-${index}`} className="border-b border-[var(--line)] last:border-b-0">
+                          <td className="px-3 py-2">{player}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : null}
 
               {snapshot.permissionBreakdown.length ? (
-                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">Permission Breakdown</p>
-                  <div className="mt-2 space-y-1 text-xs text-[var(--ink-soft)]">
-                    {snapshot.permissionBreakdown.map((item) => (
-                      <p key={item.role}>{item.role}: {item.count}</p>
-                    ))}
-                  </div>
+                <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                  <table className="min-w-full text-left text-xs">
+                    <thead className="uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                      <tr className="border-b border-[var(--line)]">
+                        <th className="px-3 py-2">Role</th>
+                        <th className="px-3 py-2">Count</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {snapshot.permissionBreakdown.map((item) => (
+                        <tr key={item.role} className="border-b border-[var(--line)] last:border-b-0">
+                          <td className="px-3 py-2">{item.role}</td>
+                          <td className="px-3 py-2">{item.count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ) : null}
 
               {snapshot.endpoints ? (
-                <div className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                  <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">
-                    Endpoint Health
-                  </p>
-                  <div className="mt-2 space-y-1.5 text-xs text-[var(--ink-soft)]">
-                    <p>
-                      /server: {endpointStateLabel(snapshot.endpoints.server.ok, snapshot.endpoints.server.status)} ({snapshot.endpoints.server.status})
-                      {typeof snapshot.endpoints.server.latencyMs === "number" ? ` - ${snapshot.endpoints.server.latencyMs}ms` : ""}
-                    </p>
-                    <p>
-                      /server/players: {endpointStateLabel(snapshot.endpoints.players.ok, snapshot.endpoints.players.status)} ({snapshot.endpoints.players.status})
-                      {typeof snapshot.endpoints.players.latencyMs === "number" ? ` - ${snapshot.endpoints.players.latencyMs}ms` : ""}
-                    </p>
-                    <p>
-                      /server/queue: {endpointStateLabel(snapshot.endpoints.queue.ok, snapshot.endpoints.queue.status)} ({snapshot.endpoints.queue.status})
-                      {typeof snapshot.endpoints.queue.latencyMs === "number" ? ` - ${snapshot.endpoints.queue.latencyMs}ms` : ""}
-                    </p>
-                  </div>
+                <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                  <table className="min-w-full text-left text-xs">
+                    <thead className="uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                      <tr className="border-b border-[var(--line)]">
+                        <th className="px-3 py-2">Endpoint</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2">HTTP</th>
+                        <th className="px-3 py-2">Latency</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-[var(--line)]">
+                        <td className="px-3 py-2">/server</td>
+                        <td className="px-3 py-2">{endpointStateLabel(snapshot.endpoints.server.ok, snapshot.endpoints.server.status)}</td>
+                        <td className="px-3 py-2">{snapshot.endpoints.server.status}</td>
+                        <td className="px-3 py-2">
+                          {typeof snapshot.endpoints.server.latencyMs === "number" ? `${snapshot.endpoints.server.latencyMs}ms` : "-"}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-[var(--line)]">
+                        <td className="px-3 py-2">/server/players</td>
+                        <td className="px-3 py-2">{endpointStateLabel(snapshot.endpoints.players.ok, snapshot.endpoints.players.status)}</td>
+                        <td className="px-3 py-2">{snapshot.endpoints.players.status}</td>
+                        <td className="px-3 py-2">
+                          {typeof snapshot.endpoints.players.latencyMs === "number" ? `${snapshot.endpoints.players.latencyMs}ms` : "-"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-3 py-2">/server/queue</td>
+                        <td className="px-3 py-2">{endpointStateLabel(snapshot.endpoints.queue.ok, snapshot.endpoints.queue.status)}</td>
+                        <td className="px-3 py-2">{snapshot.endpoints.queue.status}</td>
+                        <td className="px-3 py-2">
+                          {typeof snapshot.endpoints.queue.latencyMs === "number" ? `${snapshot.endpoints.queue.latencyMs}ms` : "-"}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               ) : null}
             </div>

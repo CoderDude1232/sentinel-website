@@ -152,13 +152,26 @@ export default function ActivityPage() {
         </p>
       ) : null}
 
-      <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {kpis.map((item) => (
-          <article key={item.label} className="dashboard-metric-card p-4">
-            <p className="text-xs uppercase tracking-[0.1em] text-[var(--ink-soft)]">{item.label}</p>
-            <p className="mt-1 text-2xl font-semibold">{item.value}</p>
-          </article>
-        ))}
+      <section className="mt-5 dashboard-card p-4 sm:p-5">
+        <h2 className="text-lg font-semibold tracking-tight">KPI Summary</h2>
+        <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+              <tr className="border-b border-[var(--line)]">
+                <th className="px-3 py-2.5">Metric</th>
+                <th className="px-3 py-2.5">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {kpis.map((item) => (
+                <tr key={item.label} className="border-b border-[var(--line)] last:border-b-0">
+                  <td className="px-3 py-2.5 font-semibold">{item.label}</td>
+                  <td className="px-3 py-2.5">{item.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="mt-5 grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
@@ -207,23 +220,25 @@ export default function ActivityPage() {
           {!data?.prc?.connected ? (
             <p className="mt-3 text-sm text-[var(--ink-soft)]">Connect ER:LC to view join, kill, command, and vehicle logs.</p>
           ) : (
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <div className="dashboard-metric-card p-3 text-sm">
-                <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Join logs</p>
-                <p className="mt-1 text-xl font-semibold">{data.prc.counts.joins}</p>
-              </div>
-              <div className="dashboard-metric-card p-3 text-sm">
-                <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Kill logs</p>
-                <p className="mt-1 text-xl font-semibold">{data.prc.counts.kills}</p>
-              </div>
-              <div className="dashboard-metric-card p-3 text-sm">
-                <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Command logs</p>
-                <p className="mt-1 text-xl font-semibold">{data.prc.counts.commands}</p>
-              </div>
-              <div className="dashboard-metric-card p-3 text-sm">
-                <p className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">Active vehicles</p>
-                <p className="mt-1 text-xl font-semibold">{data.prc.counts.vehicles}</p>
-              </div>
+            <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                  <tr className="border-b border-[var(--line)]">
+                    <th className="px-3 py-2.5">Join logs</th>
+                    <th className="px-3 py-2.5">Kill logs</th>
+                    <th className="px-3 py-2.5">Command logs</th>
+                    <th className="px-3 py-2.5">Active vehicles</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="px-3 py-2.5 font-semibold">{data.prc.counts.joins}</td>
+                    <td className="px-3 py-2.5 font-semibold">{data.prc.counts.kills}</td>
+                    <td className="px-3 py-2.5 font-semibold">{data.prc.counts.commands}</td>
+                    <td className="px-3 py-2.5 font-semibold">{data.prc.counts.vehicles}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           )}
         </article>
@@ -238,16 +253,36 @@ export default function ActivityPage() {
                 Showing {PRC_FEED_DISPLAY_LIMIT} of {feed.items.length}
               </p>
             ) : null}
-            <div className="mt-3 max-h-[340px] space-y-2 overflow-y-auto pr-1 text-sm">
-              {feed.items.slice(0, PRC_FEED_DISPLAY_LIMIT).map((item, index) => (
-                <div key={`${feed.title}-${item.primary}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)] p-3">
-                  <p className="font-semibold">{item.primary}</p>
-                  {item.secondary ? <p className="text-xs text-[var(--ink-soft)]">{item.secondary}</p> : null}
-                  {item.detail ? <p className="mt-1 text-xs text-[var(--ink-soft)]">{item.detail}</p> : null}
-                  <p className="mt-1 text-[11px] text-[var(--ink-soft)]">{formatTimestamp(item.occurredAt)}</p>
-                </div>
-              ))}
-              {!feed.items.length ? <p className="text-[var(--ink-soft)]">{feed.emptyLabel}</p> : null}
+            <div className="mt-3 max-h-[340px] overflow-y-auto pr-1">
+              <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                    <tr className="border-b border-[var(--line)]">
+                      <th className="px-3 py-2.5">Primary</th>
+                      <th className="px-3 py-2.5">Secondary</th>
+                      <th className="px-3 py-2.5">Detail</th>
+                      <th className="px-3 py-2.5">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {feed.items.slice(0, PRC_FEED_DISPLAY_LIMIT).map((item, index) => (
+                      <tr key={`${feed.title}-${item.primary}-${index}`} className="border-b border-[var(--line)] last:border-b-0">
+                        <td className="px-3 py-2.5 font-semibold">{item.primary}</td>
+                        <td className="px-3 py-2.5">{item.secondary ?? "-"}</td>
+                        <td className="px-3 py-2.5">{item.detail ?? "-"}</td>
+                        <td className="px-3 py-2.5 text-xs text-[var(--ink-soft)]">{formatTimestamp(item.occurredAt)}</td>
+                      </tr>
+                    ))}
+                    {!feed.items.length ? (
+                      <tr>
+                        <td className="px-3 py-3 text-[var(--ink-soft)]" colSpan={4}>
+                          {feed.emptyLabel}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </article>
         ))}

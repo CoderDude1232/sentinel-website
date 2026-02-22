@@ -219,7 +219,15 @@ export default function SettingsPage() {
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
             Turn modules on/off for your workspace while keeping data saved.
           </p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                <tr className="border-b border-[var(--line)]">
+                  <th className="px-3 py-2.5">Module</th>
+                  <th className="px-3 py-2.5">Enabled</th>
+                </tr>
+              </thead>
+              <tbody>
             {[
               ["enableModeration", "Moderation"],
               ["enableActivity", "Activity"],
@@ -240,17 +248,26 @@ export default function SettingsPage() {
               ["enableApiKeys", "API Keys"],
               ["enableObservability", "Observability"],
               ["enableBilling", "Billing (Optional)"],
-            ].map(([key, label]) => (
-              <label key={key} className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="ui-checkbox"
-                  checked={settings.modulePreferences[key as keyof SettingsState["modulePreferences"]]}
-                  onChange={() => toggleModulePreference(key as keyof SettingsState["modulePreferences"])}
-                />
-                {label}
-              </label>
-            ))}
+              ].map(([key, label]) => (
+                <tr key={key} className="border-b border-[var(--line)] last:border-b-0">
+                  <td className="px-3 py-2.5 font-semibold">{label}</td>
+                  <td className="px-3 py-2.5">
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        className="ui-checkbox"
+                        checked={settings.modulePreferences[key as keyof SettingsState["modulePreferences"]]}
+                        onChange={() => toggleModulePreference(key as keyof SettingsState["modulePreferences"])}
+                      />
+                      <span className="text-xs text-[var(--ink-soft)]">
+                        {settings.modulePreferences[key as keyof SettingsState["modulePreferences"]] ? "On" : "Off"}
+                      </span>
+                    </label>
+                  </td>
+                </tr>
+              ))}
+              </tbody>
+            </table>
           </div>
         </article>
 

@@ -114,28 +114,65 @@ export default function DepartmentsPage() {
               Showing {DEPARTMENTS_DISPLAY_LIMIT} of {data.departments.length} departments.
             </p>
           ) : null}
-          <div className="mt-3 max-h-[560px] space-y-2 overflow-y-auto pr-1 text-sm">
-            {data.departments.slice(0, DEPARTMENTS_DISPLAY_LIMIT).map((dept) => (
-              <div key={dept.id.toString()} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="font-semibold">{dept.name}</p>
-                <p className="text-[var(--ink-soft)]">Lead: {dept.lead}</p>
-                <p className="text-[var(--ink-soft)]">Members: {dept.members}</p>
-                <p className="text-xs text-[var(--ink-soft)]">Scope: {dept.scope}</p>
-              </div>
-            ))}
-            {!data.departments.length ? <p className="text-[var(--ink-soft)]">No departments yet.</p> : null}
+          <div className="mt-3 max-h-[560px] overflow-y-auto pr-1">
+            <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                  <tr className="border-b border-[var(--line)]">
+                    <th className="px-3 py-2.5">Department</th>
+                    <th className="px-3 py-2.5">Lead</th>
+                    <th className="px-3 py-2.5">Members</th>
+                    <th className="px-3 py-2.5">Scope</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.departments.slice(0, DEPARTMENTS_DISPLAY_LIMIT).map((dept) => (
+                    <tr key={dept.id.toString()} className="border-b border-[var(--line)] last:border-b-0">
+                      <td className="px-3 py-2.5 font-semibold">{dept.name}</td>
+                      <td className="px-3 py-2.5">{dept.lead}</td>
+                      <td className="px-3 py-2.5">{dept.members}</td>
+                      <td className="px-3 py-2.5">{dept.scope}</td>
+                    </tr>
+                  ))}
+                  {!data.departments.length ? (
+                    <tr>
+                      <td className="px-3 py-3 text-[var(--ink-soft)]" colSpan={4}>
+                        No departments yet.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
           </div>
         </article>
 
         <article className="dashboard-card p-4">
           <h2 className="text-lg font-semibold tracking-tight">Permission bands</h2>
-          <div className="mt-3 space-y-2 text-sm">
-            {data.permissionBands.map((item) => (
-              <div key={item.level} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3">
-                <p className="font-semibold">{item.level}</p>
-                <p className="text-[var(--ink-soft)]">{item.rights}</p>
-              </div>
-            ))}
+          <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                <tr className="border-b border-[var(--line)]">
+                  <th className="px-3 py-2.5">Level</th>
+                  <th className="px-3 py-2.5">Rights</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.permissionBands.map((item) => (
+                  <tr key={item.level} className="border-b border-[var(--line)] last:border-b-0">
+                    <td className="px-3 py-2.5 font-semibold">{item.level}</td>
+                    <td className="px-3 py-2.5">{item.rights}</td>
+                  </tr>
+                ))}
+                {!data.permissionBands.length ? (
+                  <tr>
+                    <td className="px-3 py-3 text-[var(--ink-soft)]" colSpan={2}>
+                      No permission bands configured.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
           </div>
         </article>
       </section>
@@ -151,17 +188,33 @@ export default function DepartmentsPage() {
               Showing {STAFF_DISPLAY_LIMIT} of {data.prc.staff.length} staff entries.
             </p>
           ) : null}
-          <div className="mt-3 max-h-[560px] overflow-y-auto pr-1">
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {data.prc.staff.slice(0, STAFF_DISPLAY_LIMIT).map((entry, index) => (
-              <div key={`${entry.name}-${index}`} className="rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
-                <p className="font-semibold">{entry.name}</p>
-                <p className="text-[var(--ink-soft)]">{entry.role ?? "Role unknown"}</p>
+            <div className="mt-3 max-h-[560px] overflow-y-auto pr-1">
+              <div className="overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                    <tr className="border-b border-[var(--line)]">
+                      <th className="px-3 py-2.5">Staff</th>
+                      <th className="px-3 py-2.5">Role</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.prc.staff.slice(0, STAFF_DISPLAY_LIMIT).map((entry, index) => (
+                      <tr key={`${entry.name}-${index}`} className="border-b border-[var(--line)] last:border-b-0">
+                        <td className="px-3 py-2.5 font-semibold">{entry.name}</td>
+                        <td className="px-3 py-2.5">{entry.role ?? "Role unknown"}</td>
+                      </tr>
+                    ))}
+                    {!data.prc.staff.length ? (
+                      <tr>
+                        <td className="px-3 py-3 text-[var(--ink-soft)]" colSpan={2}>
+                          No staff entries returned by PRC.
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
               </div>
-            ))}
-            {!data.prc.staff.length ? <p className="text-sm text-[var(--ink-soft)]">No staff entries returned by PRC.</p> : null}
-          </div>
-          </div>
+            </div>
           </>
         )}
       </section>

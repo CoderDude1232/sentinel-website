@@ -237,25 +237,31 @@ export function DiscordBotPanel() {
         Upgrade from webhooks with managed channels, slash-command support readiness, and bot-driven alert delivery.
       </p>
 
-      <div className="mt-4 rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.03)] p-3 text-sm">
-        <p className="text-[var(--ink-soft)]">
-          Bot credentials: <span className="text-[var(--ink-strong)]">{botConfigured ? "Configured" : "Missing"}</span>
-        </p>
-        <p className="mt-1 text-[var(--ink-soft)]">
-          Linked server: <span className="text-[var(--ink-strong)]">{selectedGuild?.name ?? "Not selected"}</span>
-        </p>
-        <p className="mt-1 text-[var(--ink-soft)]">
-          Alerts channel: <span className="text-[var(--ink-strong)]">{alertsChannelId ? `#${channels.find((channel) => channel.id === alertsChannelId)?.name ?? "selected"}` : "Not selected"}</span>
-        </p>
-        <p className="mt-1 text-[var(--ink-soft)]">
-          Last updated: <span className="text-[var(--ink-strong)]">{formatTimestamp(lastUpdated)}</span>
-        </p>
-        <p className="mt-1 text-[var(--ink-soft)]">
-          Test readiness:{" "}
-          <span className="text-[var(--ink-strong)]">
-            {readyForTest ? "Ready" : "Incomplete (enable + server + channel + save)"}
-          </span>
-        </p>
+      <div className="mt-4 overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+        <table className="min-w-full text-left text-sm">
+          <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+            <tr className="border-b border-[var(--line)]">
+              <th className="px-3 py-2.5">Credentials</th>
+              <th className="px-3 py-2.5">Server</th>
+              <th className="px-3 py-2.5">Alerts channel</th>
+              <th className="px-3 py-2.5">Updated</th>
+              <th className="px-3 py-2.5">Test readiness</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="px-3 py-2.5">{botConfigured ? "Configured" : "Missing"}</td>
+              <td className="px-3 py-2.5">{selectedGuild?.name ?? "Not selected"}</td>
+              <td className="px-3 py-2.5">
+                {alertsChannelId ? `#${channels.find((channel) => channel.id === alertsChannelId)?.name ?? "selected"}` : "Not selected"}
+              </td>
+              <td className="px-3 py-2.5">{formatTimestamp(lastUpdated)}</td>
+              <td className="px-3 py-2.5">
+                {readyForTest ? "Ready" : "Incomplete (enable + server + channel + save)"}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       {requiresRelogin ? (
