@@ -4,8 +4,10 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
-const MIN_VISIBLE_MS = 380;
+const MIN_VISIBLE_MS = 620;
+const HOLD_AFTER_READY_MS = 220;
 const MAX_VISIBLE_MS = 15000;
+const EXIT_ANIMATION_MS = 280;
 const DEPLOYMENT_POLL_MS = 45000;
 
 type VersionPayload = {
@@ -49,6 +51,7 @@ export function DashboardRuntime({
 }>) {
   const pathname = usePathname();
   const [overlayVisible, setOverlayVisible] = useState(true);
+  const [overlayExiting, setOverlayExiting] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [refreshingForUpdate, setRefreshingForUpdate] = useState(false);
 
@@ -57,6 +60,7 @@ export function DashboardRuntime({
   const pendingByRoute = useRef<Map<number, number>>(new Map());
   const hideTimer = useRef<number | null>(null);
   const failSafeTimer = useRef<number | null>(null);
+  const exitTimer = useRef<number | null>(null);
   const refreshingForUpdateRef = useRef(false);
   const knownRelease = useRef<string | null>(null);
 
@@ -69,10 +73,27 @@ export function DashboardRuntime({
       window.clearTimeout(failSafeTimer.current);
       failSafeTimer.current = null;
     }
+    if (exitTimer.current !== null) {
+      window.clearTimeout(exitTimer.current);
+      exitTimer.current = null;
+    }
   }, []);
 
   const getCurrentPendingCount = useCallback(() => {
     return pendingByRoute.current.get(activeRouteId.current) ?? 0;
+  }, []);
+
+  const showOverlay = useCallback(() => {
+    if (hideTimer.current !== null) {
+      window.clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+    if (exitTimer.current !== null) {
+      window.clearTimeout(exitTimer.current);
+      exitTimer.current = null;
+    }
+    setOverlayExiting(false);
+    setOverlayVisible(true);
   }, []);
 
   const evaluateOverlay = useCallback(() => {
@@ -94,7 +115,7 @@ export function DashboardRuntime({
     }
 
     const elapsed = Date.now() - routeStartTime.current;
-    const delay = Math.max(0, MIN_VISIBLE_MS - elapsed);
+    const delay = Math.max(HOLD_AFTER_READY_MS, MIN_VISIBLE_MS - elapsed);
     hideTimer.current = window.setTimeout(() => {
       const stillPending = pendingByRoute.current.get(routeId) ?? 0;
       if (
@@ -103,7 +124,19 @@ export function DashboardRuntime({
         stillPending === 0 &&
         !refreshingForUpdateRef.current
       ) {
-        setOverlayVisible(false);
+        setOverlayExiting(true);
+        exitTimer.current = window.setTimeout(() => {
+          const finalPending = pendingByRoute.current.get(routeId) ?? 0;
+          if (
+            routeId === activeRouteId.current &&
+            document.readyState === "complete" &&
+            finalPending === 0 &&
+            !refreshingForUpdateRef.current
+          ) {
+            setOverlayVisible(false);
+            setOverlayExiting(false);
+          }
+        }, EXIT_ANIMATION_MS);
       }
     }, delay);
   }, [getCurrentPendingCount]);
@@ -111,7 +144,7 @@ export function DashboardRuntime({
   useEffect(() => {
     activeRouteId.current += 1;
     routeStartTime.current = Date.now();
-    setOverlayVisible(true);
+    showOverlay();
     setPendingCount(0);
     clearTimers();
 
@@ -119,6 +152,7 @@ export function DashboardRuntime({
     failSafeTimer.current = window.setTimeout(() => {
       if (routeId === activeRouteId.current && !refreshingForUpdateRef.current) {
         setOverlayVisible(false);
+        setOverlayExiting(false);
       }
     }, MAX_VISIBLE_MS);
 
@@ -126,7 +160,7 @@ export function DashboardRuntime({
     return () => {
       clearTimers();
     };
-  }, [pathname, clearTimers, evaluateOverlay]);
+  }, [pathname, clearTimers, evaluateOverlay, showOverlay]);
 
   useEffect(() => {
     const onReadyStateChange = () => {
@@ -151,7 +185,7 @@ export function DashboardRuntime({
       const nextPending = (pendingByRoute.current.get(routeId) ?? 0) + 1;
       pendingByRoute.current.set(routeId, nextPending);
       if (routeId === activeRouteId.current && !refreshingForUpdateRef.current) {
-        setOverlayVisible(true);
+        showOverlay();
         setPendingCount(nextPending);
       }
 
@@ -175,7 +209,7 @@ export function DashboardRuntime({
     return () => {
       window.fetch = nativeFetch;
     };
-  }, [evaluateOverlay]);
+  }, [evaluateOverlay, showOverlay]);
 
   useEffect(() => {
     let active = true;
@@ -201,7 +235,7 @@ export function DashboardRuntime({
         if (knownRelease.current !== payload.release) {
           refreshingForUpdateRef.current = true;
           setRefreshingForUpdate(true);
-          setOverlayVisible(true);
+          showOverlay();
           setPendingCount(0);
           window.location.reload();
         }
@@ -225,7 +259,7 @@ export function DashboardRuntime({
     <>
       {children}
       {overlayVisible ? (
-        <div className="dashboard-loading-screen" role="status" aria-live="polite">
+        <div className={`dashboard-loading-screen${overlayExiting ? " is-exiting" : ""}`} role="status" aria-live="polite">
           <div className="dashboard-loading-panel">
             <div className="flex items-center gap-3">
               <Image src="/logo.png" alt="Sentinel logo" width={48} height={48} className="dashboard-loading-logo" priority />
