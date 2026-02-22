@@ -4,7 +4,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
-const MIN_VISIBLE_MS = 620;
+const MIN_VISIBLE_MS = 1200;
 const HOLD_AFTER_READY_MS = 220;
 const MAX_VISIBLE_MS = 15000;
 const EXIT_ANIMATION_MS = 280;
@@ -58,6 +58,7 @@ export function DashboardRuntime({
   const activeRouteId = useRef(0);
   const routeStartTime = useRef(Date.now());
   const pendingByRoute = useRef<Map<number, number>>(new Map());
+  const initialLoadSettled = useRef(false);
   const hideTimer = useRef<number | null>(null);
   const failSafeTimer = useRef<number | null>(null);
   const exitTimer = useRef<number | null>(null);
@@ -135,6 +136,7 @@ export function DashboardRuntime({
           ) {
             setOverlayVisible(false);
             setOverlayExiting(false);
+            initialLoadSettled.current = true;
           }
         }, EXIT_ANIMATION_MS);
       }
@@ -144,6 +146,7 @@ export function DashboardRuntime({
   useEffect(() => {
     activeRouteId.current += 1;
     routeStartTime.current = Date.now();
+    initialLoadSettled.current = false;
     showOverlay();
     setPendingCount(0);
     clearTimers();
@@ -153,6 +156,7 @@ export function DashboardRuntime({
       if (routeId === activeRouteId.current && !refreshingForUpdateRef.current) {
         setOverlayVisible(false);
         setOverlayExiting(false);
+        initialLoadSettled.current = true;
       }
     }, MAX_VISIBLE_MS);
 
@@ -184,7 +188,7 @@ export function DashboardRuntime({
       const routeId = activeRouteId.current;
       const nextPending = (pendingByRoute.current.get(routeId) ?? 0) + 1;
       pendingByRoute.current.set(routeId, nextPending);
-      if (routeId === activeRouteId.current && !refreshingForUpdateRef.current) {
+      if (routeId === activeRouteId.current && !refreshingForUpdateRef.current && !initialLoadSettled.current) {
         showOverlay();
         setPendingCount(nextPending);
       }
@@ -200,7 +204,7 @@ export function DashboardRuntime({
           pendingByRoute.current.set(routeId, remaining);
         }
 
-        if (routeId === activeRouteId.current) {
+        if (routeId === activeRouteId.current && !initialLoadSettled.current) {
           evaluateOverlay();
         }
       }
