@@ -9,7 +9,7 @@ export async function GlobalNavbar() {
   const session = parseSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
 
   return (
-    <header className="global-navbar mx-auto w-full max-w-7xl px-5 pt-6 sm:px-8 sm:pt-7">
+    <header className="global-navbar w-full px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3">
           <Image

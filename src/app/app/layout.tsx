@@ -16,12 +16,12 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto grid w-full max-w-[86rem] grid-cols-1 gap-5 px-4 pb-6 pt-3 sm:px-6 md:grid-cols-[272px_1fr] xl:px-8">
-        <aside className="dashboard-nav-shell h-fit p-4 md:sticky md:top-4">
+    <div className="min-h-[calc(100vh-5.5rem)] px-3 pb-4 pt-2 sm:px-4 lg:px-5">
+      <div className="grid min-h-[calc(100vh-7rem)] w-full grid-cols-1 gap-4 md:grid-cols-[264px_minmax(0,1fr)]">
+        <aside className="dashboard-nav-shell h-fit p-4 md:sticky md:top-3 md:max-h-[calc(100vh-1.5rem)] md:overflow-y-auto">
           <DashboardNav />
         </aside>
-        <section className="dashboard-content dashboard-glass p-4 sm:p-6">
+        <section className="dashboard-content dashboard-glass p-4 sm:p-5 md:p-6">
           {children}
         </section>
       </div>

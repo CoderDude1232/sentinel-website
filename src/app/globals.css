@@ -705,6 +705,7 @@ body {
 .dashboard-content {
   border: 1px solid var(--line);
   border-radius: 18px;
+  min-height: calc(100vh - 8.2rem);
   background:
     linear-gradient(165deg, rgba(13, 13, 18, 0.74), rgba(8, 8, 11, 0.82));
   box-shadow:
@@ -937,6 +938,9 @@ body {
     padding: 1rem 0.95rem 0.95rem;
   }
 
+  .dashboard-content {
+    min-height: auto;
+  }
 }
 
 .stagger-rise {
