@@ -47,15 +47,21 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 <span className="text-[var(--ink-strong)]">{session.user.displayName}</span>
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <Link href="/" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
-                  Open Dashboard
-                </Link>
-                <Link href="/onboarding" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
-                  Onboard Server
-                </Link>
-                <Link href="/api/auth/logout" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
-                  Sign Out
-                </Link>
+                <form action="/" method="GET" className="w-full sm:w-auto">
+                  <button type="submit" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
+                    Open Dashboard
+                  </button>
+                </form>
+                <form action="/onboarding" method="GET" className="w-full sm:w-auto">
+                  <button type="submit" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
+                    Onboard Server
+                  </button>
+                </form>
+                <form action="/api/auth/logout" method="GET" className="w-full sm:w-auto">
+                  <button type="submit" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
+                    Sign Out
+                  </button>
+                </form>
               </div>
             </>
           ) : (
@@ -65,9 +71,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                   Continue with Discord
                 </button>
               </form>
-              <Link href="/" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
-                Back to Home
-              </Link>
+              <form action="/" method="GET" className="w-full sm:w-auto">
+                <button type="submit" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
+                  Back to Home
+                </button>
+              </form>
             </div>
           )}
 

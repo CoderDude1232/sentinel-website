@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 const featureSections = [
   {
     title: "Moderation Panel",
@@ -61,12 +59,16 @@ export default function FeaturesPage() {
               staffing insight, infraction workflows, session control, and direct ER:LC data.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/login" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
-                Sign In with Discord
-              </Link>
-              <Link href="/app/onboarding" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
-                Connect ER:LC Server
-              </Link>
+              <form action="/login" method="GET" className="w-full sm:w-auto">
+                <button type="submit" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
+                  Sign In with Discord
+                </button>
+              </form>
+              <form action="/app/onboarding" method="GET" className="w-full sm:w-auto">
+                <button type="submit" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
+                  Connect ER:LC Server
+                </button>
+              </form>
             </div>
           </div>
           <div className="features-highlights stagger-rise delay-1">
@@ -114,12 +116,16 @@ export default function FeaturesPage() {
             Ready to configure your first workspace and connect ER:LC?
           </p>
           <div className="flex gap-2">
-            <Link href="/login" className="button-primary px-3 py-2 text-sm">
-              Open Sentinel
-            </Link>
-            <Link href="/app/onboarding" className="button-secondary px-3 py-2 text-sm">
-              Setup server
-            </Link>
+            <form action="/login" method="GET">
+              <button type="submit" className="button-primary px-3 py-2 text-sm">
+                Open Sentinel
+              </button>
+            </form>
+            <form action="/app/onboarding" method="GET">
+              <button type="submit" className="button-secondary px-3 py-2 text-sm">
+                Setup server
+              </button>
+            </form>
           </div>
         </article>
       </section>
