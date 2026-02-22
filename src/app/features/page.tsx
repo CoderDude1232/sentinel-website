@@ -61,12 +61,12 @@ export default function FeaturesPage() {
             <div className="mt-7 flex flex-wrap gap-3">
               <form action="/login" method="GET" className="w-full sm:w-auto">
                 <button type="submit" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
-                  Continue with Discord
+                  Login with Discord
                 </button>
               </form>
               <form action="/app/onboarding" method="GET" className="w-full sm:w-auto">
                 <button type="submit" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
-                  Link ER:LC Server
+                  Setup Server
                 </button>
               </form>
             </div>

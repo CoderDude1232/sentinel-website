@@ -69,17 +69,17 @@ export default function Home() {
           <div className="stagger-rise delay-3 mt-9 flex flex-wrap items-center justify-center gap-3.5">
             <form action="/app" method="GET" className="w-full sm:w-auto">
               <button type="submit" className="button-primary w-full px-6 py-3 text-base sm:w-auto">
-                Open Workspace
+                Open Dashboard
               </button>
             </form>
             <form action="/app/onboarding" method="GET" className="w-full sm:w-auto">
               <button type="submit" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
-                Link ER:LC Server
+                Setup Server
               </button>
             </form>
             <form action={discordStartAction} method="POST" className="w-full sm:w-auto">
               <button type="submit" className="button-secondary w-full px-6 py-3 text-base sm:w-auto">
-                Continue with Discord
+                Login with Discord
               </button>
             </form>
           </div>
