@@ -51,6 +51,14 @@ function levelTone(level: string): string {
   return "text-[#b5c9fa]";
 }
 
+function formatStatusLabel(value: string): string {
+  if (!value) {
+    return "Unknown";
+  }
+  const normalized = value.trim();
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+}
+
 export default function AppOverviewPage() {
   const [summary, setSummary] = useState<DashboardSummary>(emptySummary);
   const [loading, setLoading] = useState(true);
@@ -160,13 +168,26 @@ export default function AppOverviewPage() {
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          {(loading ? loadingCards : summary.cards).map((card) => (
-            <article key={card.title} className="dashboard-metric-card p-3">
-              <p className="text-xs tracking-[0.08em] text-[var(--ink-soft)]">{card.title}</p>
-              <p className="mt-1 text-[1.9rem] font-semibold tracking-tight leading-none">{card.value}</p>
-              {card.details ? <p className="mt-1 text-xs text-[var(--ink-soft)]">{card.details}</p> : null}
-            </article>
-          ))}
+          <div className="dashboard-card col-span-full overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                <tr className="border-b border-[var(--line)]">
+                  <th className="px-3 py-2.5">Metric</th>
+                  <th className="px-3 py-2.5">Current</th>
+                  <th className="px-3 py-2.5">Context</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(loading ? loadingCards : summary.cards).map((card) => (
+                  <tr key={card.title} className="border-b border-[var(--line)] last:border-b-0">
+                    <td className="px-3 py-2.5 font-semibold">{card.title}</td>
+                    <td className="px-3 py-2.5 text-lg font-semibold">{card.value}</td>
+                    <td className="px-3 py-2.5 text-xs text-[var(--ink-soft)]">{card.details || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -208,28 +229,31 @@ export default function AppOverviewPage() {
           </div>
         ) : (
           <>
-            <div className="mt-3 grid gap-2 md:grid-cols-[1.2fr_repeat(4,minmax(0,1fr))]">
-              <article className="dashboard-card p-3">
-                <p className="text-xs tracking-[0.08em] text-[var(--ink-soft)]">Server</p>
-                <p className="mt-1 text-sm font-semibold">{summary.erlc.serverName ?? "Unknown server"}</p>
-                <p className={`mt-1 text-xs ${summary.erlc.connected ? "text-[#b9ffe9]" : "text-[#ffd2da]"}`}>{statusLabel}</p>
-              </article>
-              <article className="dashboard-card p-3">
-                <p className="text-xs tracking-[0.08em] text-[var(--ink-soft)]">Players</p>
-                <p className="mt-1 text-lg font-semibold">{summary.erlc.playerCount ?? "N/A"}</p>
-              </article>
-              <article className="dashboard-card p-3">
-                <p className="text-xs tracking-[0.08em] text-[var(--ink-soft)]">Queue</p>
-                <p className="mt-1 text-lg font-semibold">{summary.erlc.queueCount ?? "N/A"}</p>
-              </article>
-              <article className="dashboard-card p-3">
-                <p className="text-xs tracking-[0.08em] text-[var(--ink-soft)]">Mod calls</p>
-                <p className="mt-1 text-lg font-semibold">{summary.erlc.modCallCount ?? "N/A"}</p>
-              </article>
-              <article className="dashboard-card p-3">
-                <p className="text-xs tracking-[0.08em] text-[var(--ink-soft)]">Command logs</p>
-                <p className="mt-1 text-lg font-semibold">{summary.erlc.commandLogCount ?? "N/A"}</p>
-              </article>
+            <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                  <tr className="border-b border-[var(--line)]">
+                    <th className="px-3 py-2.5">Server</th>
+                    <th className="px-3 py-2.5">Status</th>
+                    <th className="px-3 py-2.5">Players</th>
+                    <th className="px-3 py-2.5">Queue</th>
+                    <th className="px-3 py-2.5">Mod calls</th>
+                    <th className="px-3 py-2.5">Command logs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="px-3 py-2.5 font-semibold">{summary.erlc.serverName ?? "Unknown server"}</td>
+                    <td className={`px-3 py-2.5 text-xs font-semibold ${summary.erlc.connected ? "text-[#b9ffe9]" : "text-[#ffd2da]"}`}>
+                      {statusLabel}
+                    </td>
+                    <td className="px-3 py-2.5 font-semibold">{summary.erlc.playerCount ?? "N/A"}</td>
+                    <td className="px-3 py-2.5 font-semibold">{summary.erlc.queueCount ?? "N/A"}</td>
+                    <td className="px-3 py-2.5 font-semibold">{summary.erlc.modCallCount ?? "N/A"}</td>
+                    <td className="px-3 py-2.5 font-semibold">{summary.erlc.commandLogCount ?? "N/A"}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--ink-soft)]">
               {endpointHealth ? <span>{endpointHealth}</span> : null}
@@ -245,18 +269,27 @@ export default function AppOverviewPage() {
             <h2 className="text-base font-semibold tracking-tight">Recent activity</h2>
             <span className="text-xs text-[var(--ink-soft)]">Latest events</span>
           </div>
-          <div className="mt-3 space-y-2">
-            {(summary.feed.length ? summary.feed : [{ time: "-", label: "No alerts yet", level: "Info" }]).slice(0, 5).map((item) => (
-              <div key={`${item.time}-${item.label}`} className="dashboard-feed-item rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)] px-3 py-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm text-[var(--ink-strong)]">{item.label}</p>
-                  <span className={`text-[10px] uppercase tracking-[0.08em] ${levelTone(item.level)}`}>
-                    {item.level}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-[var(--ink-soft)]">{item.time}</p>
-              </div>
-            ))}
+          <div className="mt-3 overflow-x-auto rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                <tr className="border-b border-[var(--line)]">
+                  <th className="px-3 py-2.5">Event</th>
+                  <th className="px-3 py-2.5">Level</th>
+                  <th className="px-3 py-2.5">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(summary.feed.length ? summary.feed : [{ time: "-", label: "No alerts yet", level: "Info" }]).slice(0, 7).map((item, index) => (
+                  <tr key={`${item.time}-${item.label}-${index}`} className="border-b border-[var(--line)] last:border-b-0">
+                    <td className="px-3 py-2.5">{item.label}</td>
+                    <td className={`px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.08em] ${levelTone(item.level)}`}>
+                      {formatStatusLabel(item.level)}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-[var(--ink-soft)]">{item.time}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </article>
 
@@ -279,13 +312,17 @@ export default function AppOverviewPage() {
 
           <article className="dashboard-card p-4 sm:p-5">
             <h2 className="text-base font-semibold tracking-tight">Shortcuts</h2>
-            <div className="mt-3 grid gap-2">
-              {shortcutLinks.map((route) => (
-                <Link key={route.href} href={route.href} className="dashboard-action-link rounded-md border border-[var(--line)] px-3 py-2">
-                  <p className="text-sm font-semibold">{route.label}</p>
-                  <p className="text-xs text-[var(--ink-soft)]">{route.caption}</p>
-                </Link>
-              ))}
+            <div className="mt-3 overflow-hidden rounded-md border border-[var(--line)] bg-[rgba(255,255,255,0.02)]">
+              <div className="divide-y divide-[var(--line)]">
+                {shortcutLinks.map((route) => (
+                  <Link key={route.href} href={route.href} className="block px-3 py-2.5 transition-colors hover:bg-[rgba(255,255,255,0.04)]">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold">{route.label}</p>
+                      <span className="text-xs text-[var(--ink-soft)]">{route.caption}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           </article>
         </div>
